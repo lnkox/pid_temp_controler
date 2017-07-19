@@ -6,10 +6,6 @@
 #define sem_2 PORTC.1
 #define sem_3 PORTC.0
 
-#define tsens_1 5
-#define tsens_2 6
-#define tsens_3 7
-#define tsens_port PORTD
 
 #define mode_0 PIND.5
 #define mode_1 PIND.4
@@ -31,16 +27,30 @@
 
 #define fan PORTB.2
 
+
+#define K_P     1.00
+#define K_I     0.50
+#define K_D     0.30
+
 #include <mega328.h>
 // Standard Input/Output functions
 #include <stdio.h>
 #include <delay.h>
+#include "pidlib.h"
 
 // Declare your global variables here
+
+
 volatile char delay_pow1=0,delay_pow2=0,delay_pow3=0;
 volatile char pow1=0,pow2=0,pow3=0;
 volatile int temp1,temp2,temp3,temp4;
 
+struct PID_DATA pidData;
+bit pid_frag=0;
+void Init_pid(void)
+{
+  pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData);
+}
 int w1_find(void)
 {
     int device=0;
@@ -102,15 +112,9 @@ char w1_readbyte(char n_ter)
         delay_us(14);     // ждем завершения переходных процессов
 
         if (t1_pin && n_ter==1){res=res|(1 << bitc);} 
-        if (t2_pin && n_ter==2){res=res|(1 << bitc); }
-        if (t3_pin && n_ter==3)                      
-        { 
-            res=res|(1 << bitc);
-        };
-        if (t4_pin && n_ter==4)                      
-        { 
-            res=res|(1 << bitc);
-        };
+        if (t2_pin && n_ter==2){res=res|(1 << bitc);}
+        if (t3_pin && n_ter==3){res=res|(1 << bitc);}
+        if (t4_pin && n_ter==4){res=res|(1 << bitc);}
         delay_us(45); // ждем до завершения тайм слота
         };
         delay_us(5);
@@ -177,7 +181,11 @@ void read_temp(void)
     temp = temp<<8;
     temp |= data[0];
     temp4=temp* 0.0625;
-    printf("temp1=%i \n\r",temp1); 
+    printf("temp1=%i  ",temp1);  
+    printf("temp2=%i  ",temp2); 
+    printf("temp3=%i  ",temp3); 
+    printf("temp4=%i \n\r",temp4); 
+    pid_frag=1;
 
 }
 interrupt [PC_INT0] void pin_change_isr0(void)
@@ -218,6 +226,7 @@ TCNT1L=0xBDC & 0xff;
 void main(void)
 {
 // Declare your local variables here
+int referenceValue, measurementValue, inputValue;
 
 // Crystal Oscillator division factor: 1
 #pragma optsize-
@@ -367,10 +376,22 @@ ds1820_init();
 pow1=20;
 pow2=50;
 pow3=90;
+  Init_pid();
 printf("start \n\r");
 while (1)
       {
       // Place your code here
+    if(pid_frag)
+    {
+        referenceValue = 40;
+        measurementValue = temp1;
 
+        inputValue = pid_Controller(referenceValue, measurementValue, &pidData);
+
+            printf("referenceValue=%i  ",referenceValue);  
+            printf("measurementValue=%i  ",measurementValue); 
+            printf("inputValue=%i \n\r",inputValue); 
+        pid_frag=0;
+    }
       }
 }

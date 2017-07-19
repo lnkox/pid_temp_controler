@@ -11,6 +11,7 @@ temp1                                                                           
 temp2                                                                             0x0308       2
 temp3                                                                             0x030A       2
 temp4                                                                             0x030C       2
+pidData                                                                           0x030E      18
 
 EEPROM Allocation [bytes]
 Variable                                                                          Address   Size
@@ -19,23 +20,27 @@ Variable                                                                        
 Register Allocation
 Variable                                                                          Register  Size
 ------------------------------------------------------------------------------------------------
+pid_frag                                                                          GPIOR0.0  1bit
 
 FLASH Allocation [words]
 Function                                                                          Address   Size
 ------------------------------------------------------------------------------------------------
-w1_find                                                                           0x00075     49
-w1_send                                                                           0x000A6     44
-w1_readbyte                                                                       0x000D2     66
-send_start_measurement                                                            0x00114     10
-ds1820_init                                                                       0x0011E     11
-read_temp                                                                         0x00129    101
-pin_change_isr0                                                                   0x0018E     18
-timer0_ovf_isr                                                                    0x001A0     80
-timer1_ovf_isr                                                                    0x001F0     31
-main                                                                              0x0020F    120
-putchar                                                                           0x00287     10
-put_usart_G100                                                                    0x00291     13
-_print_G100                                                                       0x0029E    308
-printf                                                                            0x003D2     37
-strlen                                                                            0x003F7     12
-strlenf                                                                           0x00403     13
+pid_Init                                                                          0x00093     72
+pid_Controller                                                                    0x000DB    212
+Init_pid                                                                          0x001AF     22
+w1_find                                                                           0x001C5     49
+w1_send                                                                           0x001F6     44
+w1_readbyte                                                                       0x00222     66
+send_start_measurement                                                            0x00264     10
+ds1820_init                                                                       0x0026E     11
+read_temp                                                                         0x00279    102
+pin_change_isr0                                                                   0x002DF     18
+timer0_ovf_isr                                                                    0x002F1     80
+timer1_ovf_isr                                                                    0x00341     31
+main                                                                              0x00360    169
+putchar                                                                           0x00409     10
+put_usart_G100                                                                    0x00413     13
+_print_G100                                                                       0x00420    308
+printf                                                                            0x00554     37
+strlen                                                                            0x00579     12
+strlenf                                                                           0x00585     13

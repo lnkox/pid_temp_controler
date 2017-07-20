@@ -1,40 +1,44 @@
-#define zero_1 PINB.5
-#define zero_2 PINB.4
-#define zero_3 PINB.3
+#define zero_1 PINB.5 // датчик нуля 1-го тену 
+#define zero_2 PINB.4 // датчик нуля 2-го тену
+#define zero_3 PINB.3 // датчик нуля 3-го тену
 
-#define sem_1 PORTC.2
-#define sem_2 PORTC.1
-#define sem_3 PORTC.0
+#define sem_1 PORTC.2 // керування 1-им семістором
+#define sem_2 PORTC.1 // керування 2-им семістором
+#define sem_3 PORTC.0 // керування 3-им семістором
 
 
-#define mode_0 PIND.5
-#define mode_1 PIND.4
-#define mode_2 PIND.3
-#define mode_3 PIND.2
+#define mode_0 PIND.2 //перемикач режимів (OFF) 
+#define mode_1 PIND.4 //перемикач режимів (1) 
+#define mode_2 PIND.3 //перемикач режимів (2) 
+#define mode_3 PIND.5 //перемикач режимів (3) 
 
-#define t1_port PORTD.6
-#define t1_pin PIND.6
-#define t1_ddr DDRD.6
-#define t2_port PORTD.7
-#define t2_pin PIND.7
-#define t2_ddr DDRD.7
-#define t3_port PORTB.0
-#define t3_pin PINB.0
-#define t3_ddr DDRB.0
-#define t4_port PORTB.1
-#define t4_pin PINB.1
-#define t4_ddr DDRB.1
+#define t1_port PORTD.6 // Термодатчик 1
+#define t1_pin PIND.6  // Термодатчик 1
+#define t1_ddr DDRD.6  // Термодатчик 1
+#define t2_port PORTD.7  // Термодатчик 2
+#define t2_pin PIND.7 // Термодатчик 2
+#define t2_ddr DDRD.7 // Термодатчик 2
+#define t3_port PORTB.0  // Термодатчик 3
+#define t3_pin PINB.0  // Термодатчик 3
+#define t3_ddr DDRB.0  // Термодатчик 3
+#define t4_port PORTB.1 // Термодатчик 4
+#define t4_pin PINB.1  // Термодатчик 4
+#define t4_ddr DDRB.1  // Термодатчик 4
 
-#define fan PORTB.2
+#define fan PORTB.2 // Вентилятор
 
 
 #define K_P     0.20
 #define K_I     0.00
 #define K_D     0.00
 
-#define maxtemp1  800 // одиниця на 0.0625 градуса
-#define maxtemp2  800 // одиниця на 0.0625 градуса
-#define maxtemp3  800 // одиниця на 0.0625 градуса
+#define maxtemp1  800 // Максимальна температура 1-го тену (одиниця на 0.0625 градуса)
+#define maxtemp2  800 // Максимальна температура 2-го тену (одиниця на 0.0625 градуса)
+#define maxtemp3  800 // Максимальна температура 3-го тену (одиниця на 0.0625 градуса)
+
+#define tempmode1  288 // Температура 1-го режиму (одиниця на 0.0625 градуса)
+#define tempmode2  352 // Температура 2-го режиму (одиниця на 0.0625 градуса)
+#define tempmode3  384 // Температура 3-го режиму (одиниця на 0.0625 градуса)
 
 #include <mega328.h>
 // Standard Input/Output functions
@@ -50,13 +54,15 @@ volatile char pow1=0,pow2=0,pow3=0;
 volatile int temp1,temp2,temp3,temp4;
 volatile unsigned char res1=0,res2=0,res3=0,res4=0;
 volatile int error_cnt=0;
+volatile int mode_temp=0;
 struct PID_DATA pidData1;
 bit pid_frag=0;
-void Init_pid(void)
+
+void Init_pid(void) // Ініціалізація ПІД
 {
     pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData1);
 }
-int w1_find(void)
+int w1_find(void) // Перевірка наявності та скидання пристрою на 1-wire для всіх 4 термодатчиків
 {
     int device=0;
     t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1; 
@@ -72,7 +78,7 @@ int w1_find(void)
 	return device;
 }
 
-void w1_send(char cmd)
+void w1_send(char cmd) // відправка  байту 1-wire для всіх 4 термодатчиків
 {
     unsigned char bitc=0; 
     for (bitc=0; bitc < 8; bitc++)
@@ -95,15 +101,15 @@ void w1_send(char cmd)
             t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;
             delay_us(5);
         };          
-        cmd=cmd>>1; //сдвигаем передаваемый байт данных на 1 в сторону младших разрядов
+        cmd=cmd>>1;
         };
 }
 
 
-char w1_readbyte()
+char w1_readbyte() // Читання  байту 1-wire для всіх 4 термодатчиків
 {
-    unsigned char bitc=0;// счетчик принятых байт
-    unsigned char res=0; // принятый байт
+    unsigned char bitc=0;
+    unsigned char res=0; 
     res1=0;res2=0;res3=0;res4=0;
     for (bitc=0; bitc < 8; bitc++)
         {
@@ -111,27 +117,24 @@ char w1_readbyte()
         t1_port=0; t2_port=0; t3_port=0; t4_port=0;
         delay_us(1);
         t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
-        delay_us(14);     // ждем завершения переходных процессов
+        delay_us(14);
 
         if (t1_pin){res1=res1|(1 << bitc);} 
         if (t2_pin){res2=res2|(1 << bitc);}
         if (t3_pin){res3=res3|(1 << bitc);}
         if (t4_pin){res4=res4|(1 << bitc);}
-        delay_us(45); // ждем до завершения тайм слота
+        delay_us(45); 
         };
         delay_us(5);
     return res;
 }
-void send_start_measurement(void)
+void send_start_measurement(void) // Відправка команди початку вимірювання температури для всіх 4 термодатчиків
 {
- 
     w1_find();
     w1_send(0xcc);  // пропустить ром
     w1_send(0x44);
-   
-
 }
-void ds1820_init(void)
+void ds1820_init(void) // ініціалізація всіх 4 термодатчиків 
 {
     w1_find();  
     w1_send(0xcc);  // пропустить ром
@@ -140,12 +143,12 @@ void ds1820_init(void)
     w1_send(0); // нижняя граница термостата tlow
     w1_send(0x1f); // режим работы - 9 бит
 }
-void read_temp(void)
+void read_temp(void) // Читання температури всіх 4 термодатчиків
 {
     unsigned char data[4];
-    w1_find();//снова посылаем Presence и Reset
+    w1_find();
     w1_send(0xcc);
-    w1_send(0xbe);//передать байты ведущему(у 18b20 в первых двух содержится температура)     
+    w1_send(0xbe);    
     w1_readbyte();
     data[0] = res1; data[1] = res2; data[2] = res3;  data[3] = res4;
     w1_readbyte();
@@ -157,17 +160,24 @@ void read_temp(void)
    // printf("temp2=%i  ",temp2); 
    // printf("temp3=%i  ",temp3); 
    // printf("temp4=%i \n\r",temp4); 
-    pid_frag=1;
+    
 
 }
-interrupt [PC_INT0] void pin_change_isr0(void)
+void check_mode(void) // Перевірка стану перемикача режимів (Виставлення необхідної температури в кімнаті)
+{
+    mode_temp=-50;
+    if (mode_1==0) mode_temp=tempmode1;
+    if (mode_2==0) mode_temp=tempmode2;
+    if (mode_3==0) mode_temp=tempmode3; 
+}
+interrupt [PC_INT0] void pin_change_isr0(void) // Переривання при зміні стану будь якого з трьох датчиків нуля (оновлення відповідного лічильника інтервалу)
 {
     if (zero_1==1) delay_pow1=0; 
     if (zero_2==1) delay_pow2=0; 
     if (zero_3==1) delay_pow3=0; 
 }
 // Timer 0 overflow interrupt service routine
-interrupt [TIM0_OVF] void timer0_ovf_isr(void)
+interrupt [TIM0_OVF] void timer0_ovf_isr(void) // Переривання таймера кожні 0.1мс (задавання інтервалів вмикання семістора для регулювання потужності)
 {
     bit p1=0,p2=0,p3=0;
     TCNT0=0x9C;
@@ -181,33 +191,32 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void)
       
 }
 
-// Timer1 overflow interrupt service routine
-interrupt [TIM1_OVF] void timer1_ovf_isr(void)
+interrupt [TIM1_OVF] void timer1_ovf_isr(void) // Переривання таймера кожні 100мс (вимір температури, перевірка стану перемикача режимів)
 {
 // Reinitialize Timer1 value
 TCNT1H=0xCF2C >> 8;
 TCNT1L=0xCF2C & 0xff;
      #asm("cli")
-        read_temp();
-        send_start_measurement();
-     #asm("sei")  
-     delay_pow1=0; 
-     delay_pow2=0; 
-     delay_pow3=0;         
-
+    read_temp();
+    send_start_measurement();
+    check_mode();
+    pid_frag=1;          
+    delay_pow1=0; 
+    delay_pow2=0; 
+    delay_pow3=0;         
+     #asm("sei") 
 }
-void set_power_ten1(int power)
+void set_power_ten1(int power) // Встановлення вихідної потужності для тена 1
 {
     if (power>99) power=99;
     if (power>5) { pow1=100-power;} else {pow1=110;}
-   
 }
-void set_power_ten2(int power)
+void set_power_ten2(int power) // Встановлення вихідної потужності для тена 2
 {
     if (power>99) power=99;
     if (power>5) { pow2=100-power;} else {pow2=110;}
 }
-void set_power_ten3(int power)
+void set_power_ten3(int power) // Встановлення вихідної потужності для тена 3
 {
     if (power>99) power=99;
     if (power>5) { pow3=100-power;} else {pow3=110;}
@@ -369,25 +378,37 @@ set_power_ten3(0);
   Init_pid();
 printf("start \n\r");
 while (1)
-      {
+{
       // Place your code here
     if(pid_frag)
-    {
-        if(temp1<1200)
+    {  
+        if (mode_temp>temp4)
         {
-            power_to_ten1 = pid_Controller(maxtemp1,temp1, &pidData1);
+            if(temp1<1200 && temp1!=-1)
+            {
+                power_to_ten1 = pid_Controller(maxtemp1,temp1, &pidData1);
+            }
+            else
+            {
+                power_to_ten1=0;   
+            } 
         }
         else
         {
-            error_cnt++;
-        } 
-        
-         set_power_ten1(power_to_ten1);
-
-         
-         printf("mV=%i  ",temp1); 
-          printf("oV=%i \n\r",power_to_ten1); 
+            power_to_ten1=0;power_to_ten2=0;power_to_ten3=0;    
+        }
+        set_power_ten1(power_to_ten1);
+        set_power_ten2(power_to_ten2);
+        set_power_ten3(power_to_ten3);
+        if(temp1>1200 || temp1==-1) error_cnt++;
+        if(temp2>1200 || temp2==-1) error_cnt++;  
+        if(temp3>1200 || temp3==-1) error_cnt++;  
+        if(temp4>1200 || temp4==-1) error_cnt++; 
+        printf("err=%i  ", error_cnt);   
+        printf("mV=%i  ",temp1); 
+        printf("oV=%i \n\r",power_to_ten1); 
         pid_frag=0;
     }
-      }
+        
+}
 }

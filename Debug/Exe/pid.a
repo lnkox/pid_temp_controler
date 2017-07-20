@@ -1,40 +1,44 @@
-;#define zero_1 PINB.5
-;#define zero_2 PINB.4
-;#define zero_3 PINB.3
+;#define zero_1 PINB.5 // датчик нуля 1-го тену
+;#define zero_2 PINB.4 // датчик нуля 2-го тену
+;#define zero_3 PINB.3 // датчик нуля 3-го тену
 ;
-;#define sem_1 PORTC.2
-;#define sem_2 PORTC.1
-;#define sem_3 PORTC.0
+;#define sem_1 PORTC.2 // керування 1-им семістором
+;#define sem_2 PORTC.1 // керування 2-им семістором
+;#define sem_3 PORTC.0 // керування 3-им семістором
 ;
 ;
-;#define mode_0 PIND.5
-;#define mode_1 PIND.4
-;#define mode_2 PIND.3
-;#define mode_3 PIND.2
+;#define mode_0 PIND.2 //перемикач режимів (OFF)
+;#define mode_1 PIND.4 //перемикач режимів (1)
+;#define mode_2 PIND.3 //перемикач режимів (2)
+;#define mode_3 PIND.5 //перемикач режимів (3)
 ;
-;#define t1_port PORTD.6
-;#define t1_pin PIND.6
-;#define t1_ddr DDRD.6
-;#define t2_port PORTD.7
-;#define t2_pin PIND.7
-;#define t2_ddr DDRD.7
-;#define t3_port PORTB.0
-;#define t3_pin PINB.0
-;#define t3_ddr DDRB.0
-;#define t4_port PORTB.1
-;#define t4_pin PINB.1
-;#define t4_ddr DDRB.1
+;#define t1_port PORTD.6 // Термодатчик 1
+;#define t1_pin PIND.6  // Термодатчик 1
+;#define t1_ddr DDRD.6  // Термодатчик 1
+;#define t2_port PORTD.7  // Термодатчик 2
+;#define t2_pin PIND.7 // Термодатчик 2
+;#define t2_ddr DDRD.7 // Термодатчик 2
+;#define t3_port PORTB.0  // Термодатчик 3
+;#define t3_pin PINB.0  // Термодатчик 3
+;#define t3_ddr DDRB.0  // Термодатчик 3
+;#define t4_port PORTB.1 // Термодатчик 4
+;#define t4_pin PINB.1  // Термодатчик 4
+;#define t4_ddr DDRB.1  // Термодатчик 4
 ;
-;#define fan PORTB.2
+;#define fan PORTB.2 // Вентилятор
 ;
 ;
 ;#define K_P     0.20
 ;#define K_I     0.00
 ;#define K_D     0.00
 ;
-;#define maxtemp1  800 // одиниця на 0.0625 градуса
-;#define maxtemp2  800 // одиниця на 0.0625 градуса
-;#define maxtemp3  800 // одиниця на 0.0625 градуса
+;#define maxtemp1  800 // Максимальна температура 1-го тену (одиниця на 0.0625 градуса)
+;#define maxtemp2  800 // Максимальна температура 2-го тену (одиниця на 0.0625 градуса)
+;#define maxtemp3  800 // Максимальна температура 3-го тену (одиниця на 0.0625 градуса)
+;
+;#define tempmode1  288 // Температура 1-го режиму (одиниця на 0.0625 градуса)
+;#define tempmode2  352 // Температура 2-го режиму (одиниця на 0.0625 градуса)
+;#define tempmode3  384 // Температура 3-го режиму (одиниця на 0.0625 градуса)
 ;
 ;#include <mega328.h>
 ;PCODE: $00000000 VOL: 0
@@ -65,31 +69,6 @@
 ;#include <stdio.h>
 ;#include <delay.h>
 ;#include "pidlib.h"
-;/*This file has been prepared for Doxygen automatic documentation generation.*/
-;/*! \file *********************************************************************
-; *
-; * \brief General PID implementation for AVR.
-; *
-; * Discrete PID controller implementation. Set up by giving P/I/D terms
-; * to Init_PID(), and uses a struct PID_DATA to store internal values.
-; *
-; * - File:               pid.c
-; * - Compiler:           IAR EWAAVR 4.11A
-; * - Supported devices:  All AVR devices can be used.
-; * - AppNote:            AVR221 - Discrete PID controller
-; *
-; * \author               Atmel Corporation: http://www.atmel.com \n
-; *                       Support email: avr@atmel.com
-; *
-; * $Name$
-; * $Revision: 456 $
-; * $RCSfile$
-; * $Date: 2006-02-16 12:46:13 +0100 (to, 16 feb 2006) $
-; *****************************************************************************/
-;
-;
-;
-;
 ;/*! \brief Initialisation of PID controller parameters.
 ; *
 ; *  Initialise the variables used by the PID algorithm.
@@ -100,7 +79,7 @@
 ; *  \param pid  Struct with PID status.
 ; */
 ;void pid_Init(signed int p_factor, signed int i_factor, signed int d_factor, struct PID_DATA *pid)
-; 0000 002B // Set up PID controller parameters
+; 0000 002F // Set up PID controller parameters
 ;{
 
 	.CSEG
@@ -385,13 +364,15 @@
 ;volatile int temp1,temp2,temp3,temp4;
 ;volatile unsigned char res1=0,res2=0,res3=0,res4=0;
 ;volatile int error_cnt=0;
+;volatile int mode_temp=0;
 ;struct PID_DATA pidData1;
 ;bit pid_frag=0;
-;void Init_pid(void)
-; 0000 0038 {
+;
+;void Init_pid(void) // Ініціалізація ПІД
+; 0000 003E {
 ;PCODE: $000000C0 VOL: 0
 ;PCODE: $000000C1 VOL: 0
-; 0000 0039     pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData1);
+; 0000 003F     pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData1);
 ;PCODE: $000000C2 VOL: 0
 ;PCODE: $000000C3 VOL: 0
 ;PCODE: $000000C4 VOL: 0
@@ -400,15 +381,15 @@
 ;PCODE: $000000C7 VOL: 0
 ;PCODE: $000000C8 VOL: 0
 ;PCODE: $000000C9 VOL: 0
-; 0000 003A }
+; 0000 0040 }
 ;PCODE: $000000CA VOL: 0
 ;PCODE: $000000CB VOL: 0
-;int w1_find(void)
-; 0000 003C {
+;int w1_find(void) // Перевірка наявності та скидання пристрою на 1-wire для всіх 4 термодатчиків
+; 0000 0042 {
 ;PCODE: $000000CC VOL: 0
 ;PCODE: $000000CD VOL: 0
-; 0000 003D     int device=0;
-; 0000 003E     t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
+; 0000 0043     int device=0;
+; 0000 0044     t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
 ;PCODE: $000000CE VOL: 0
 ;PCODE: $000000CF VOL: 0
 ;	device -> R16,R17
@@ -422,7 +403,7 @@
 ;PCODE: $000000D7 VOL: 0
 ;PCODE: $000000D8 VOL: 0
 ;PCODE: $000000D9 VOL: 0
-; 0000 003F     t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+; 0000 0045     t1_port=0; t2_port=0; t3_port=0; t4_port=0;
 ;PCODE: $000000DA VOL: 0
 ;PCODE: $000000DB VOL: 0
 ;PCODE: $000000DC VOL: 0
@@ -431,9 +412,9 @@
 ;PCODE: $000000DF VOL: 0
 ;PCODE: $000000E0 VOL: 0
 ;PCODE: $000000E1 VOL: 0
-; 0000 0040     delay_us(485);
+; 0000 0046     delay_us(485);
 ;PCODE: $000000E2 VOL: 0
-; 0000 0041     t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;
+; 0000 0047     t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;
 ;PCODE: $000000E3 VOL: 0
 ;PCODE: $000000E4 VOL: 0
 ;PCODE: $000000E5 VOL: 0
@@ -442,47 +423,47 @@
 ;PCODE: $000000E8 VOL: 0
 ;PCODE: $000000E9 VOL: 0
 ;PCODE: $000000EA VOL: 0
-; 0000 0042     delay_us(65);
+; 0000 0048     delay_us(65);
 ;PCODE: $000000EB VOL: 0
-; 0000 0043     device=device+!t1_port;
+; 0000 0049     device=device+!t1_port;
 ;PCODE: $000000EC VOL: 0
 ;PCODE: $000000ED VOL: 0
 ;PCODE: $000000EE VOL: 0
 ;PCODE: $000000EF VOL: 0
 ;PCODE: $000000F0 VOL: 0
-; 0000 0044     device=device+!t2_port;
+; 0000 004A     device=device+!t2_port;
 ;PCODE: $000000F1 VOL: 0
 ;PCODE: $000000F2 VOL: 0
 ;PCODE: $000000F3 VOL: 0
 ;PCODE: $000000F4 VOL: 0
 ;PCODE: $000000F5 VOL: 0
-; 0000 0045     device=device+!t3_port;
+; 0000 004B     device=device+!t3_port;
 ;PCODE: $000000F6 VOL: 0
 ;PCODE: $000000F7 VOL: 0
 ;PCODE: $000000F8 VOL: 0
 ;PCODE: $000000F9 VOL: 0
 ;PCODE: $000000FA VOL: 0
-; 0000 0046     device=device+!t4_port;
+; 0000 004C     device=device+!t4_port;
 ;PCODE: $000000FB VOL: 0
 ;PCODE: $000000FC VOL: 0
 ;PCODE: $000000FD VOL: 0
 ;PCODE: $000000FE VOL: 0
 ;PCODE: $000000FF VOL: 0
-; 0000 0047 	delay_us(420);
+; 0000 004D 	delay_us(420);
 ;PCODE: $00000100 VOL: 0
-; 0000 0048 	return device;
+; 0000 004E 	return device;
 ;PCODE: $00000101 VOL: 0
 ;PCODE: $00000102 VOL: 0
 ;PCODE: $00000103 VOL: 0
-; 0000 0049 }
+; 0000 004F }
 ;PCODE: $00000104 VOL: 0
 ;
-;void w1_send(char cmd)
-; 0000 004C {
+;void w1_send(char cmd) // відправка  байту 1-wire для всіх 4 термодатчиків
+; 0000 0052 {
 ;PCODE: $00000105 VOL: 0
 ;PCODE: $00000106 VOL: 0
-; 0000 004D     unsigned char bitc=0;
-; 0000 004E     for (bitc=0; bitc < 8; bitc++)
+; 0000 0053     unsigned char bitc=0;
+; 0000 0054     for (bitc=0; bitc < 8; bitc++)
 ;PCODE: $00000107 VOL: 0
 ;PCODE: $00000108 VOL: 0
 ;	cmd -> Y+1
@@ -498,13 +479,13 @@
 ;PCODE: $00000111 VOL: 0
 ;PCODE: $00000112 VOL: 0
 ;PCODE: $00000113 VOL: 0
-; 0000 004F      {
-; 0000 0050         if (cmd&0x01) // сравниваем младший бит
+; 0000 0055      {
+; 0000 0056         if (cmd&0x01) // сравниваем младший бит
 ;PCODE: $00000114 VOL: 0
 ;PCODE: $00000115 VOL: 0
 ;PCODE: $00000116 VOL: 0
-; 0000 0051         {
-; 0000 0052             t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
+; 0000 0057         {
+; 0000 0058             t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
 ;PCODE: $00000117 VOL: 0
 ;PCODE: $00000118 VOL: 0
 ;PCODE: $00000119 VOL: 0
@@ -513,7 +494,7 @@
 ;PCODE: $0000011C VOL: 0
 ;PCODE: $0000011D VOL: 0
 ;PCODE: $0000011E VOL: 0
-; 0000 0053             t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+; 0000 0059             t1_port=0; t2_port=0; t3_port=0; t4_port=0;
 ;PCODE: $0000011F VOL: 0
 ;PCODE: $00000120 VOL: 0
 ;PCODE: $00000121 VOL: 0
@@ -522,9 +503,9 @@
 ;PCODE: $00000124 VOL: 0
 ;PCODE: $00000125 VOL: 0
 ;PCODE: $00000126 VOL: 0
-; 0000 0054             delay_us(15);
+; 0000 005A             delay_us(15);
 ;PCODE: $00000127 VOL: 0
-; 0000 0055             t1_port=1;t2_port=1;t3_port=1;t4_port=1;
+; 0000 005B             t1_port=1;t2_port=1;t3_port=1;t4_port=1;
 ;PCODE: $00000128 VOL: 0
 ;PCODE: $00000129 VOL: 0
 ;PCODE: $0000012A VOL: 0
@@ -533,9 +514,9 @@
 ;PCODE: $0000012D VOL: 0
 ;PCODE: $0000012E VOL: 0
 ;PCODE: $0000012F VOL: 0
-; 0000 0056             delay_us(50);
+; 0000 005C             delay_us(50);
 ;PCODE: $00000130 VOL: 0
-; 0000 0057             t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
+; 0000 005D             t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
 ;PCODE: $00000131 VOL: 0
 ;PCODE: $00000132 VOL: 0
 ;PCODE: $00000133 VOL: 0
@@ -544,14 +525,14 @@
 ;PCODE: $00000136 VOL: 0
 ;PCODE: $00000137 VOL: 0
 ;PCODE: $00000138 VOL: 0
-; 0000 0058             delay_us(5);
+; 0000 005E             delay_us(5);
 ;PCODE: $00000139 VOL: 0
-; 0000 0059         }
-; 0000 005A         else
+; 0000 005F         }
+; 0000 0060         else
 ;PCODE: $0000013A VOL: 0
 ;PCODE: $0000013B VOL: 0
-; 0000 005B         {
-; 0000 005C             t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
+; 0000 0061         {
+; 0000 0062             t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
 ;PCODE: $0000013C VOL: 0
 ;PCODE: $0000013D VOL: 0
 ;PCODE: $0000013E VOL: 0
@@ -560,7 +541,7 @@
 ;PCODE: $00000141 VOL: 0
 ;PCODE: $00000142 VOL: 0
 ;PCODE: $00000143 VOL: 0
-; 0000 005D             t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+; 0000 0063             t1_port=0; t2_port=0; t3_port=0; t4_port=0;
 ;PCODE: $00000144 VOL: 0
 ;PCODE: $00000145 VOL: 0
 ;PCODE: $00000146 VOL: 0
@@ -569,9 +550,9 @@
 ;PCODE: $00000149 VOL: 0
 ;PCODE: $0000014A VOL: 0
 ;PCODE: $0000014B VOL: 0
-; 0000 005E             delay_us(65);
+; 0000 0064             delay_us(65);
 ;PCODE: $0000014C VOL: 0
-; 0000 005F             t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;
+; 0000 0065             t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;
 ;PCODE: $0000014D VOL: 0
 ;PCODE: $0000014E VOL: 0
 ;PCODE: $0000014F VOL: 0
@@ -580,21 +561,21 @@
 ;PCODE: $00000152 VOL: 0
 ;PCODE: $00000153 VOL: 0
 ;PCODE: $00000154 VOL: 0
-; 0000 0060             delay_us(5);
+; 0000 0066             delay_us(5);
 ;PCODE: $00000155 VOL: 0
-; 0000 0061         };
+; 0000 0067         };
 ;PCODE: $00000156 VOL: 0
-; 0000 0062         cmd=cmd>>1; //сдвигаем передаваемый байт данных на 1 в сторону младших разрядов
+; 0000 0068         cmd=cmd>>1;
 ;PCODE: $00000157 VOL: 0
 ;PCODE: $00000158 VOL: 0
 ;PCODE: $00000159 VOL: 0
-; 0000 0063         };
+; 0000 0069         };
 ;PCODE: $0000015A VOL: 0
 ;PCODE: $0000015B VOL: 0
 ;PCODE: $0000015C VOL: 0
 ;PCODE: $0000015D VOL: 0
 ;PCODE: $0000015E VOL: 0
-; 0000 0064 }
+; 0000 006A }
 ;PCODE: $0000015F VOL: 0
 ;PCODE: $00000160 VOL: 0
 ;PCODE: $00000161 VOL: 0
@@ -602,13 +583,13 @@
 ;PCODE: $00000163 VOL: 0
 ;
 ;
-;char w1_readbyte()
-; 0000 0068 {
+;char w1_readbyte() // Читання  байту 1-wire для всіх 4 термодатчиків
+; 0000 006E {
 ;PCODE: $00000164 VOL: 0
 ;PCODE: $00000165 VOL: 0
-; 0000 0069     unsigned char bitc=0;// счетчик принятых байт
-; 0000 006A     unsigned char res=0; // принятый байт
-; 0000 006B     res1=0;res2=0;res3=0;res4=0;
+; 0000 006F     unsigned char bitc=0;
+; 0000 0070     unsigned char res=0;
+; 0000 0071     res1=0;res2=0;res3=0;res4=0;
 ;PCODE: $00000166 VOL: 0
 ;PCODE: $00000167 VOL: 0
 ;	bitc -> R17
@@ -625,7 +606,7 @@
 ;PCODE: $00000171 VOL: 1
 ;PCODE: $00000172 VOL: 0
 ;PCODE: $00000173 VOL: 1
-; 0000 006C     for (bitc=0; bitc < 8; bitc++)
+; 0000 0072     for (bitc=0; bitc < 8; bitc++)
 ;PCODE: $00000174 VOL: 0
 ;PCODE: $00000175 VOL: 0
 ;PCODE: $00000176 VOL: 0
@@ -635,8 +616,8 @@
 ;PCODE: $0000017A VOL: 0
 ;PCODE: $0000017B VOL: 0
 ;PCODE: $0000017C VOL: 0
-; 0000 006D         {
-; 0000 006E         t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
+; 0000 0073         {
+; 0000 0074         t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
 ;PCODE: $0000017D VOL: 0
 ;PCODE: $0000017E VOL: 0
 ;PCODE: $0000017F VOL: 0
@@ -645,7 +626,7 @@
 ;PCODE: $00000182 VOL: 0
 ;PCODE: $00000183 VOL: 0
 ;PCODE: $00000184 VOL: 0
-; 0000 006F         t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+; 0000 0075         t1_port=0; t2_port=0; t3_port=0; t4_port=0;
 ;PCODE: $00000185 VOL: 0
 ;PCODE: $00000186 VOL: 0
 ;PCODE: $00000187 VOL: 0
@@ -654,9 +635,9 @@
 ;PCODE: $0000018A VOL: 0
 ;PCODE: $0000018B VOL: 0
 ;PCODE: $0000018C VOL: 0
-; 0000 0070         delay_us(1);
+; 0000 0076         delay_us(1);
 ;PCODE: $0000018D VOL: 0
-; 0000 0071         t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
+; 0000 0077         t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
 ;PCODE: $0000018E VOL: 0
 ;PCODE: $0000018F VOL: 0
 ;PCODE: $00000190 VOL: 0
@@ -665,10 +646,10 @@
 ;PCODE: $00000193 VOL: 0
 ;PCODE: $00000194 VOL: 0
 ;PCODE: $00000195 VOL: 0
-; 0000 0072         delay_us(14);     // ждем завершения переходных процессов
+; 0000 0078         delay_us(14);
 ;PCODE: $00000196 VOL: 0
-; 0000 0073 
-; 0000 0074         if (t1_pin){res1=res1|(1 << bitc);}
+; 0000 0079 
+; 0000 007A         if (t1_pin){res1=res1|(1 << bitc);}
 ;PCODE: $00000197 VOL: 0
 ;PCODE: $00000198 VOL: 0
 ;PCODE: $00000199 VOL: 0
@@ -678,7 +659,7 @@
 ;PCODE: $0000019D VOL: 1
 ;PCODE: $0000019E VOL: 0
 ;PCODE: $0000019F VOL: 1
-; 0000 0075         if (t2_pin){res2=res2|(1 << bitc);}
+; 0000 007B         if (t2_pin){res2=res2|(1 << bitc);}
 ;PCODE: $000001A0 VOL: 0
 ;PCODE: $000001A1 VOL: 0
 ;PCODE: $000001A2 VOL: 0
@@ -689,7 +670,7 @@
 ;PCODE: $000001A7 VOL: 1
 ;PCODE: $000001A8 VOL: 0
 ;PCODE: $000001A9 VOL: 1
-; 0000 0076         if (t3_pin){res3=res3|(1 << bitc);}
+; 0000 007C         if (t3_pin){res3=res3|(1 << bitc);}
 ;PCODE: $000001AA VOL: 0
 ;PCODE: $000001AB VOL: 0
 ;PCODE: $000001AC VOL: 0
@@ -700,7 +681,7 @@
 ;PCODE: $000001B1 VOL: 1
 ;PCODE: $000001B2 VOL: 0
 ;PCODE: $000001B3 VOL: 1
-; 0000 0077         if (t4_pin){res4=res4|(1 << bitc);}
+; 0000 007D         if (t4_pin){res4=res4|(1 << bitc);}
 ;PCODE: $000001B4 VOL: 0
 ;PCODE: $000001B5 VOL: 0
 ;PCODE: $000001B6 VOL: 0
@@ -711,83 +692,80 @@
 ;PCODE: $000001BB VOL: 1
 ;PCODE: $000001BC VOL: 0
 ;PCODE: $000001BD VOL: 1
-; 0000 0078         delay_us(45); // ждем до завершения тайм слота
+; 0000 007E         delay_us(45);
 ;PCODE: $000001BE VOL: 0
 ;PCODE: $000001BF VOL: 0
-; 0000 0079         };
+; 0000 007F         };
 ;PCODE: $000001C0 VOL: 0
 ;PCODE: $000001C1 VOL: 0
 ;PCODE: $000001C2 VOL: 0
 ;PCODE: $000001C3 VOL: 0
 ;PCODE: $000001C4 VOL: 0
-; 0000 007A         delay_us(5);
+; 0000 0080         delay_us(5);
 ;PCODE: $000001C5 VOL: 0
-; 0000 007B     return res;
+; 0000 0081     return res;
 ;PCODE: $000001C6 VOL: 0
 ;PCODE: $000001C7 VOL: 0
 ;PCODE: $000001C8 VOL: 0
-; 0000 007C }
+; 0000 0082 }
 ;PCODE: $000001C9 VOL: 0
-;void send_start_measurement(void)
-; 0000 007E {
+;void send_start_measurement(void) // Відправка команди початку вимірювання температури для всіх 4 термодатчиків
+; 0000 0084 {
 ;PCODE: $000001CA VOL: 0
 ;PCODE: $000001CB VOL: 0
-; 0000 007F 
-; 0000 0080     w1_find();
+; 0000 0085     w1_find();
 ;PCODE: $000001CC VOL: 0
-; 0000 0081     w1_send(0xcc);  // пропустить ром
+; 0000 0086     w1_send(0xcc);  // пропустить ром
 ;PCODE: $000001CD VOL: 0
 ;PCODE: $000001CE VOL: 0
-; 0000 0082     w1_send(0x44);
+; 0000 0087     w1_send(0x44);
 ;PCODE: $000001CF VOL: 0
 ;PCODE: $000001D0 VOL: 0
-; 0000 0083 
-; 0000 0084 
-; 0000 0085 }
+; 0000 0088 }
 ;PCODE: $000001D1 VOL: 0
 ;PCODE: $000001D2 VOL: 0
-;void ds1820_init(void)
-; 0000 0087 {
+;void ds1820_init(void) // ініціалізація всіх 4 термодатчиків
+; 0000 008A {
 ;PCODE: $000001D3 VOL: 0
 ;PCODE: $000001D4 VOL: 0
-; 0000 0088     w1_find();
+; 0000 008B     w1_find();
 ;PCODE: $000001D5 VOL: 0
-; 0000 0089     w1_send(0xcc);  // пропустить ром
+; 0000 008C     w1_send(0xcc);  // пропустить ром
 ;PCODE: $000001D6 VOL: 0
 ;PCODE: $000001D7 VOL: 0
-; 0000 008A     w1_send(0x4e); // команда записи в датчик
+; 0000 008D     w1_send(0x4e); // команда записи в датчик
 ;PCODE: $000001D8 VOL: 0
 ;PCODE: $000001D9 VOL: 0
-; 0000 008B     w1_send(0x32); // верхняя граница термостата th
+; 0000 008E     w1_send(0x32); // верхняя граница термостата th
 ;PCODE: $000001DA VOL: 0
 ;PCODE: $000001DB VOL: 0
-; 0000 008C     w1_send(0); // нижняя граница термостата tlow
+; 0000 008F     w1_send(0); // нижняя граница термостата tlow
 ;PCODE: $000001DC VOL: 0
 ;PCODE: $000001DD VOL: 0
-; 0000 008D     w1_send(0x1f); // режим работы - 9 бит
+; 0000 0090     w1_send(0x1f); // режим работы - 9 бит
 ;PCODE: $000001DE VOL: 0
 ;PCODE: $000001DF VOL: 0
-; 0000 008E }
+; 0000 0091 }
 ;PCODE: $000001E0 VOL: 0
 ;PCODE: $000001E1 VOL: 0
-;void read_temp(void)
-; 0000 0090 {
+;void read_temp(void) // Читання температури всіх 4 термодатчиків
+; 0000 0093 {
 ;PCODE: $000001E2 VOL: 0
 ;PCODE: $000001E3 VOL: 0
-; 0000 0091     unsigned char data[4];
-; 0000 0092     w1_find();//снова посылаем Presence и Reset
+; 0000 0094     unsigned char data[4];
+; 0000 0095     w1_find();
 ;PCODE: $000001E4 VOL: 0
 ;	data -> Y+0
 ;PCODE: $000001E5 VOL: 0
-; 0000 0093     w1_send(0xcc);
+; 0000 0096     w1_send(0xcc);
 ;PCODE: $000001E6 VOL: 0
 ;PCODE: $000001E7 VOL: 0
-; 0000 0094     w1_send(0xbe);//передать байты ведущему(у 18b20 в первых двух содержится температура)
+; 0000 0097     w1_send(0xbe);
 ;PCODE: $000001E8 VOL: 0
 ;PCODE: $000001E9 VOL: 0
-; 0000 0095     w1_readbyte();
+; 0000 0098     w1_readbyte();
 ;PCODE: $000001EA VOL: 0
-; 0000 0096     data[0] = res1; data[1] = res2; data[2] = res3;  data[3] = res4;
+; 0000 0099     data[0] = res1; data[1] = res2; data[2] = res3;  data[3] = res4;
 ;PCODE: $000001EB VOL: 1
 ;PCODE: $000001EC VOL: 0
 ;PCODE: $000001ED VOL: 1
@@ -796,9 +774,9 @@
 ;PCODE: $000001F0 VOL: 0
 ;PCODE: $000001F1 VOL: 1
 ;PCODE: $000001F2 VOL: 0
-; 0000 0097     w1_readbyte();
+; 0000 009A     w1_readbyte();
 ;PCODE: $000001F3 VOL: 0
-; 0000 0098     temp1 = (res1<<8)| data[0];
+; 0000 009B     temp1 = (res1<<8)| data[0];
 ;PCODE: $000001F4 VOL: 0
 ;PCODE: $000001F5 VOL: 1
 ;PCODE: $000001F6 VOL: 0
@@ -806,7 +784,7 @@
 ;PCODE: $000001F8 VOL: 0
 ;PCODE: $000001F9 VOL: 0
 ;PCODE: $000001FA VOL: 1
-; 0000 0099     temp2 = (res2<<8)| data[1];
+; 0000 009C     temp2 = (res2<<8)| data[1];
 ;PCODE: $000001FB VOL: 0
 ;PCODE: $000001FC VOL: 1
 ;PCODE: $000001FD VOL: 0
@@ -814,7 +792,7 @@
 ;PCODE: $000001FF VOL: 0
 ;PCODE: $00000200 VOL: 0
 ;PCODE: $00000201 VOL: 1
-; 0000 009A     temp3 = (res3<<8)| data[2];
+; 0000 009D     temp3 = (res3<<8)| data[2];
 ;PCODE: $00000202 VOL: 0
 ;PCODE: $00000203 VOL: 1
 ;PCODE: $00000204 VOL: 0
@@ -822,7 +800,7 @@
 ;PCODE: $00000206 VOL: 0
 ;PCODE: $00000207 VOL: 0
 ;PCODE: $00000208 VOL: 1
-; 0000 009B     temp4 = (res4<<8)| data[3];
+; 0000 009E     temp4 = (res4<<8)| data[3];
 ;PCODE: $00000209 VOL: 0
 ;PCODE: $0000020A VOL: 1
 ;PCODE: $0000020B VOL: 0
@@ -830,133 +808,140 @@
 ;PCODE: $0000020D VOL: 0
 ;PCODE: $0000020E VOL: 0
 ;PCODE: $0000020F VOL: 1
-; 0000 009C    // printf("temp1=%i  ",temp1);
-; 0000 009D    // printf("temp2=%i  ",temp2);
-; 0000 009E    // printf("temp3=%i  ",temp3);
-; 0000 009F    // printf("temp4=%i \n\r",temp4);
-; 0000 00A0     pid_frag=1;
+; 0000 009F    // printf("temp1=%i  ",temp1);
+; 0000 00A0    // printf("temp2=%i  ",temp2);
+; 0000 00A1    // printf("temp3=%i  ",temp3);
+; 0000 00A2    // printf("temp4=%i \n\r",temp4);
+; 0000 00A3 
+; 0000 00A4 
+; 0000 00A5 }
 ;PCODE: $00000210 VOL: 0
 ;PCODE: $00000211 VOL: 0
-; 0000 00A1 
-; 0000 00A2 }
 ;PCODE: $00000212 VOL: 0
+;void check_mode(void) // Перевірка стану перемикача режимів (Виставлення необхідної температури в кімнаті)
+; 0000 00A7 {
 ;PCODE: $00000213 VOL: 0
 ;PCODE: $00000214 VOL: 0
-;interrupt [PC_INT0] void pin_change_isr0(void)
-; 0000 00A4 {
+; 0000 00A8     mode_temp=-50;
 ;PCODE: $00000215 VOL: 0
-;PCODE: $00000216 VOL: 0
-; 0000 00A5     if (zero_1==1) delay_pow1=0;
+;PCODE: $00000216 VOL: 1
+; 0000 00A9     if (mode_1==0) mode_temp=tempmode1;
 ;PCODE: $00000217 VOL: 0
 ;PCODE: $00000218 VOL: 0
 ;PCODE: $00000219 VOL: 0
 ;PCODE: $0000021A VOL: 0
 ;PCODE: $0000021B VOL: 1
-; 0000 00A6     if (zero_2==1) delay_pow2=0;
+; 0000 00AA     if (mode_2==0) mode_temp=tempmode2;
 ;PCODE: $0000021C VOL: 0
 ;PCODE: $0000021D VOL: 0
 ;PCODE: $0000021E VOL: 0
 ;PCODE: $0000021F VOL: 0
 ;PCODE: $00000220 VOL: 0
 ;PCODE: $00000221 VOL: 1
-; 0000 00A7     if (zero_3==1) delay_pow3=0;
+; 0000 00AB     if (mode_3==0) mode_temp=tempmode3;
 ;PCODE: $00000222 VOL: 0
 ;PCODE: $00000223 VOL: 0
 ;PCODE: $00000224 VOL: 0
 ;PCODE: $00000225 VOL: 0
 ;PCODE: $00000226 VOL: 0
 ;PCODE: $00000227 VOL: 1
-; 0000 00A8 }
+; 0000 00AC }
 ;PCODE: $00000228 VOL: 0
 ;PCODE: $00000229 VOL: 0
 ;PCODE: $0000022A VOL: 0
+;interrupt [PC_INT0] void pin_change_isr0(void) // Переривання при зміні стану будь якого з трьох датчиків нуля (оновленн ...
+; 0000 00AE {
 ;PCODE: $0000022B VOL: 0
-;// Timer 0 overflow interrupt service routine
-;interrupt [TIM0_OVF] void timer0_ovf_isr(void)
-; 0000 00AB {
 ;PCODE: $0000022C VOL: 0
+; 0000 00AF     if (zero_1==1) delay_pow1=0;
 ;PCODE: $0000022D VOL: 0
-; 0000 00AC     bit p1=0,p2=0,p3=0;
-; 0000 00AD     TCNT0=0x9C;
-;	p1 -> R15.0
-;	p2 -> R15.1
-;	p3 -> R15.2
 ;PCODE: $0000022E VOL: 0
 ;PCODE: $0000022F VOL: 0
 ;PCODE: $00000230 VOL: 0
-; 0000 00AE     if ( delay_pow1<105 ) delay_pow1++;
 ;PCODE: $00000231 VOL: 1
+; 0000 00B0     if (zero_2==1) delay_pow2=0;
 ;PCODE: $00000232 VOL: 0
 ;PCODE: $00000233 VOL: 0
-;PCODE: $00000234 VOL: 1
+;PCODE: $00000234 VOL: 0
 ;PCODE: $00000235 VOL: 0
-;PCODE: $00000236 VOL: 1
-; 0000 00AF     if ( delay_pow2<105 ) delay_pow2++;
-;PCODE: $00000237 VOL: 0
-;PCODE: $00000238 VOL: 1
+;PCODE: $00000236 VOL: 0
+;PCODE: $00000237 VOL: 1
+; 0000 00B1     if (zero_3==1) delay_pow3=0;
+;PCODE: $00000238 VOL: 0
 ;PCODE: $00000239 VOL: 0
 ;PCODE: $0000023A VOL: 0
-;PCODE: $0000023B VOL: 1
+;PCODE: $0000023B VOL: 0
 ;PCODE: $0000023C VOL: 0
 ;PCODE: $0000023D VOL: 1
-; 0000 00B0     if ( delay_pow3<105 ) delay_pow3++;
+; 0000 00B2 }
 ;PCODE: $0000023E VOL: 0
-;PCODE: $0000023F VOL: 1
+;PCODE: $0000023F VOL: 0
 ;PCODE: $00000240 VOL: 0
 ;PCODE: $00000241 VOL: 0
-;PCODE: $00000242 VOL: 1
+;// Timer 0 overflow interrupt service routine
+;interrupt [TIM0_OVF] void timer0_ovf_isr(void) // Переривання таймера кожні 0.1мс (задавання інтервалів вмикання семісто ...
+; 0000 00B5 {
+;PCODE: $00000242 VOL: 0
 ;PCODE: $00000243 VOL: 0
-;PCODE: $00000244 VOL: 1
-; 0000 00B1     if (delay_pow1==pow1) p1=1;
+; 0000 00B6     bit p1=0,p2=0,p3=0;
+; 0000 00B7     TCNT0=0x9C;
+;	p1 -> R15.0
+;	p2 -> R15.1
+;	p3 -> R15.2
+;PCODE: $00000244 VOL: 0
 ;PCODE: $00000245 VOL: 0
-;PCODE: $00000246 VOL: 1
+;PCODE: $00000246 VOL: 0
+; 0000 00B8     if ( delay_pow1<105 ) delay_pow1++;
 ;PCODE: $00000247 VOL: 1
 ;PCODE: $00000248 VOL: 0
 ;PCODE: $00000249 VOL: 0
-;PCODE: $0000024A VOL: 0
+;PCODE: $0000024A VOL: 1
 ;PCODE: $0000024B VOL: 0
-;PCODE: $0000024C VOL: 0
-; 0000 00B2     if (delay_pow2==pow2) p2=1;
+;PCODE: $0000024C VOL: 1
+; 0000 00B9     if ( delay_pow2<105 ) delay_pow2++;
 ;PCODE: $0000024D VOL: 0
 ;PCODE: $0000024E VOL: 1
-;PCODE: $0000024F VOL: 1
+;PCODE: $0000024F VOL: 0
 ;PCODE: $00000250 VOL: 0
-;PCODE: $00000251 VOL: 0
+;PCODE: $00000251 VOL: 1
 ;PCODE: $00000252 VOL: 0
-;PCODE: $00000253 VOL: 0
+;PCODE: $00000253 VOL: 1
+; 0000 00BA     if ( delay_pow3<105 ) delay_pow3++;
 ;PCODE: $00000254 VOL: 0
-; 0000 00B3     if (delay_pow3==pow3) p3=1;
-;PCODE: $00000255 VOL: 0
-;PCODE: $00000256 VOL: 1
-;PCODE: $00000257 VOL: 1
-;PCODE: $00000258 VOL: 0
+;PCODE: $00000255 VOL: 1
+;PCODE: $00000256 VOL: 0
+;PCODE: $00000257 VOL: 0
+;PCODE: $00000258 VOL: 1
 ;PCODE: $00000259 VOL: 0
-;PCODE: $0000025A VOL: 0
+;PCODE: $0000025A VOL: 1
+; 0000 00BB     if (delay_pow1==pow1) p1=1;
 ;PCODE: $0000025B VOL: 0
-;PCODE: $0000025C VOL: 0
-; 0000 00B4     sem_1=p1;sem_2=p2;sem_3=p3;
-;PCODE: $0000025D VOL: 0
+;PCODE: $0000025C VOL: 1
+;PCODE: $0000025D VOL: 1
 ;PCODE: $0000025E VOL: 0
 ;PCODE: $0000025F VOL: 0
 ;PCODE: $00000260 VOL: 0
 ;PCODE: $00000261 VOL: 0
 ;PCODE: $00000262 VOL: 0
+; 0000 00BC     if (delay_pow2==pow2) p2=1;
 ;PCODE: $00000263 VOL: 0
-;PCODE: $00000264 VOL: 0
-;PCODE: $00000265 VOL: 0
+;PCODE: $00000264 VOL: 1
+;PCODE: $00000265 VOL: 1
 ;PCODE: $00000266 VOL: 0
 ;PCODE: $00000267 VOL: 0
 ;PCODE: $00000268 VOL: 0
 ;PCODE: $00000269 VOL: 0
 ;PCODE: $0000026A VOL: 0
+; 0000 00BD     if (delay_pow3==pow3) p3=1;
 ;PCODE: $0000026B VOL: 0
-;PCODE: $0000026C VOL: 0
-;PCODE: $0000026D VOL: 0
+;PCODE: $0000026C VOL: 1
+;PCODE: $0000026D VOL: 1
 ;PCODE: $0000026E VOL: 0
 ;PCODE: $0000026F VOL: 0
 ;PCODE: $00000270 VOL: 0
 ;PCODE: $00000271 VOL: 0
 ;PCODE: $00000272 VOL: 0
+; 0000 00BE     sem_1=p1;sem_2=p2;sem_3=p3;
 ;PCODE: $00000273 VOL: 0
 ;PCODE: $00000274 VOL: 0
 ;PCODE: $00000275 VOL: 0
@@ -966,489 +951,609 @@
 ;PCODE: $00000279 VOL: 0
 ;PCODE: $0000027A VOL: 0
 ;PCODE: $0000027B VOL: 0
-; 0000 00B5 
-; 0000 00B6 }
 ;PCODE: $0000027C VOL: 0
 ;PCODE: $0000027D VOL: 0
 ;PCODE: $0000027E VOL: 0
-;
-;// Timer1 overflow interrupt service routine
-;interrupt [TIM1_OVF] void timer1_ovf_isr(void)
-; 0000 00BA {
 ;PCODE: $0000027F VOL: 0
 ;PCODE: $00000280 VOL: 0
-; 0000 00BB // Reinitialize Timer1 value
-; 0000 00BC TCNT1H=0xCF2C >> 8;
 ;PCODE: $00000281 VOL: 0
 ;PCODE: $00000282 VOL: 0
-; 0000 00BD TCNT1L=0xCF2C & 0xff;
 ;PCODE: $00000283 VOL: 0
 ;PCODE: $00000284 VOL: 0
-; 0000 00BE      #asm("cli")
 ;PCODE: $00000285 VOL: 0
-	cli
 ;PCODE: $00000286 VOL: 0
-; 0000 00BF         read_temp();
 ;PCODE: $00000287 VOL: 0
-; 0000 00C0         send_start_measurement();
 ;PCODE: $00000288 VOL: 0
-; 0000 00C1      #asm("sei")
 ;PCODE: $00000289 VOL: 0
-	sei
 ;PCODE: $0000028A VOL: 0
-; 0000 00C2      delay_pow1=0;
 ;PCODE: $0000028B VOL: 0
-;PCODE: $0000028C VOL: 1
-; 0000 00C3      delay_pow2=0;
+;PCODE: $0000028C VOL: 0
 ;PCODE: $0000028D VOL: 0
-;PCODE: $0000028E VOL: 1
-; 0000 00C4      delay_pow3=0;
+;PCODE: $0000028E VOL: 0
 ;PCODE: $0000028F VOL: 0
-;PCODE: $00000290 VOL: 1
-; 0000 00C5 
-; 0000 00C6 }
+;PCODE: $00000290 VOL: 0
 ;PCODE: $00000291 VOL: 0
+; 0000 00BF 
+; 0000 00C0 }
 ;PCODE: $00000292 VOL: 0
 ;PCODE: $00000293 VOL: 0
-;void set_power_ten1(int power)
-; 0000 00C8 {
 ;PCODE: $00000294 VOL: 0
+;
+;interrupt [TIM1_OVF] void timer1_ovf_isr(void) // Переривання таймера кожні 100мс (вимір температури, перевірка стану пе ...
+; 0000 00C3 {
 ;PCODE: $00000295 VOL: 0
-; 0000 00C9     if (power>99) power=99;
 ;PCODE: $00000296 VOL: 0
-;	power -> Y+0
+; 0000 00C4 // Reinitialize Timer1 value
+; 0000 00C5 TCNT1H=0xCF2C >> 8;
 ;PCODE: $00000297 VOL: 0
 ;PCODE: $00000298 VOL: 0
+; 0000 00C6 TCNT1L=0xCF2C & 0xff;
 ;PCODE: $00000299 VOL: 0
 ;PCODE: $0000029A VOL: 0
+; 0000 00C7      #asm("cli")
 ;PCODE: $0000029B VOL: 0
-; 0000 00CA     if (power>5) { pow1=100-power;} else {pow1=110;}
+	cli
 ;PCODE: $0000029C VOL: 0
+; 0000 00C8     read_temp();
 ;PCODE: $0000029D VOL: 0
+; 0000 00C9     send_start_measurement();
 ;PCODE: $0000029E VOL: 0
+; 0000 00CA     check_mode();
 ;PCODE: $0000029F VOL: 0
+; 0000 00CB     pid_frag=1;
 ;PCODE: $000002A0 VOL: 0
 ;PCODE: $000002A1 VOL: 0
+; 0000 00CC     delay_pow1=0;
 ;PCODE: $000002A2 VOL: 0
 ;PCODE: $000002A3 VOL: 1
+; 0000 00CD     delay_pow2=0;
 ;PCODE: $000002A4 VOL: 0
-;PCODE: $000002A5 VOL: 0
+;PCODE: $000002A5 VOL: 1
+; 0000 00CE     delay_pow3=0;
 ;PCODE: $000002A6 VOL: 0
 ;PCODE: $000002A7 VOL: 1
+; 0000 00CF      #asm("sei")
 ;PCODE: $000002A8 VOL: 0
-; 0000 00CB 
-; 0000 00CC }
+	sei
 ;PCODE: $000002A9 VOL: 0
+; 0000 00D0 }
 ;PCODE: $000002AA VOL: 0
 ;PCODE: $000002AB VOL: 0
-;void set_power_ten2(int power)
-; 0000 00CE {
 ;PCODE: $000002AC VOL: 0
+;void set_power_ten1(int power) // Встановлення вихідної потужності для тена 1
+; 0000 00D2 {
 ;PCODE: $000002AD VOL: 0
-; 0000 00CF     if (power>99) power=99;
 ;PCODE: $000002AE VOL: 0
-;	power -> Y+0
+; 0000 00D3     if (power>99) power=99;
 ;PCODE: $000002AF VOL: 0
+;	power -> Y+0
 ;PCODE: $000002B0 VOL: 0
 ;PCODE: $000002B1 VOL: 0
 ;PCODE: $000002B2 VOL: 0
 ;PCODE: $000002B3 VOL: 0
-; 0000 00D0     if (power>5) { pow2=100-power;} else {pow2=110;}
 ;PCODE: $000002B4 VOL: 0
+; 0000 00D4     if (power>5) { pow1=100-power;} else {pow1=110;}
 ;PCODE: $000002B5 VOL: 0
 ;PCODE: $000002B6 VOL: 0
 ;PCODE: $000002B7 VOL: 0
 ;PCODE: $000002B8 VOL: 0
 ;PCODE: $000002B9 VOL: 0
 ;PCODE: $000002BA VOL: 0
-;PCODE: $000002BB VOL: 1
-;PCODE: $000002BC VOL: 0
+;PCODE: $000002BB VOL: 0
+;PCODE: $000002BC VOL: 1
 ;PCODE: $000002BD VOL: 0
 ;PCODE: $000002BE VOL: 0
-;PCODE: $000002BF VOL: 1
-;PCODE: $000002C0 VOL: 0
-; 0000 00D1 }
+;PCODE: $000002BF VOL: 0
+;PCODE: $000002C0 VOL: 1
 ;PCODE: $000002C1 VOL: 0
+; 0000 00D5 }
 ;PCODE: $000002C2 VOL: 0
 ;PCODE: $000002C3 VOL: 0
-;void set_power_ten3(int power)
-; 0000 00D3 {
 ;PCODE: $000002C4 VOL: 0
+;void set_power_ten2(int power) // Встановлення вихідної потужності для тена 2
+; 0000 00D7 {
 ;PCODE: $000002C5 VOL: 0
-; 0000 00D4     if (power>99) power=99;
 ;PCODE: $000002C6 VOL: 0
-;	power -> Y+0
+; 0000 00D8     if (power>99) power=99;
 ;PCODE: $000002C7 VOL: 0
+;	power -> Y+0
 ;PCODE: $000002C8 VOL: 0
 ;PCODE: $000002C9 VOL: 0
 ;PCODE: $000002CA VOL: 0
 ;PCODE: $000002CB VOL: 0
-; 0000 00D5     if (power>5) { pow3=100-power;} else {pow3=110;}
 ;PCODE: $000002CC VOL: 0
+; 0000 00D9     if (power>5) { pow2=100-power;} else {pow2=110;}
 ;PCODE: $000002CD VOL: 0
 ;PCODE: $000002CE VOL: 0
 ;PCODE: $000002CF VOL: 0
 ;PCODE: $000002D0 VOL: 0
 ;PCODE: $000002D1 VOL: 0
 ;PCODE: $000002D2 VOL: 0
-;PCODE: $000002D3 VOL: 1
-;PCODE: $000002D4 VOL: 0
+;PCODE: $000002D3 VOL: 0
+;PCODE: $000002D4 VOL: 1
 ;PCODE: $000002D5 VOL: 0
 ;PCODE: $000002D6 VOL: 0
-;PCODE: $000002D7 VOL: 1
-;PCODE: $000002D8 VOL: 0
-; 0000 00D6 }
+;PCODE: $000002D7 VOL: 0
+;PCODE: $000002D8 VOL: 1
 ;PCODE: $000002D9 VOL: 0
+; 0000 00DA }
 ;PCODE: $000002DA VOL: 0
 ;PCODE: $000002DB VOL: 0
-;void main(void)
-; 0000 00D8 {
 ;PCODE: $000002DC VOL: 0
-; 0000 00D9 // Declare your local variables here
-; 0000 00DA int power_to_ten1, power_to_ten2, power_to_ten3;
-; 0000 00DB 
-; 0000 00DC // Crystal Oscillator division factor: 1
-; 0000 00DD #pragma optsize-
-; 0000 00DE CLKPR=(1<<CLKPCE);
+;void set_power_ten3(int power) // Встановлення вихідної потужності для тена 3
+; 0000 00DC {
+;PCODE: $000002DD VOL: 0
+;PCODE: $000002DE VOL: 0
+; 0000 00DD     if (power>99) power=99;
+;PCODE: $000002DF VOL: 0
+;	power -> Y+0
+;PCODE: $000002E0 VOL: 0
+;PCODE: $000002E1 VOL: 0
+;PCODE: $000002E2 VOL: 0
+;PCODE: $000002E3 VOL: 0
+;PCODE: $000002E4 VOL: 0
+; 0000 00DE     if (power>5) { pow3=100-power;} else {pow3=110;}
+;PCODE: $000002E5 VOL: 0
+;PCODE: $000002E6 VOL: 0
+;PCODE: $000002E7 VOL: 0
+;PCODE: $000002E8 VOL: 0
+;PCODE: $000002E9 VOL: 0
+;PCODE: $000002EA VOL: 0
+;PCODE: $000002EB VOL: 0
+;PCODE: $000002EC VOL: 1
+;PCODE: $000002ED VOL: 0
+;PCODE: $000002EE VOL: 0
+;PCODE: $000002EF VOL: 0
+;PCODE: $000002F0 VOL: 1
+;PCODE: $000002F1 VOL: 0
+; 0000 00DF }
+;PCODE: $000002F2 VOL: 0
+;PCODE: $000002F3 VOL: 0
+;PCODE: $000002F4 VOL: 0
+;void main(void)
+; 0000 00E1 {
+;PCODE: $000002F5 VOL: 0
+; 0000 00E2 // Declare your local variables here
+; 0000 00E3 int power_to_ten1, power_to_ten2, power_to_ten3;
+; 0000 00E4 
+; 0000 00E5 // Crystal Oscillator division factor: 1
+; 0000 00E6 #pragma optsize-
+; 0000 00E7 CLKPR=(1<<CLKPCE);
 ;	power_to_ten1 -> R16,R17
 ;	power_to_ten2 -> R18,R19
 ;	power_to_ten3 -> R20,R21
-;PCODE: $000002DD VOL: 0
-;PCODE: $000002DE VOL: 0
-; 0000 00DF CLKPR=(0<<CLKPCE) | (0<<CLKPS3) | (0<<CLKPS2) | (0<<CLKPS1) | (0<<CLKPS0);
-;PCODE: $000002DF VOL: 0
-;PCODE: $000002E0 VOL: 0
-; 0000 00E0 #ifdef _OPTIMIZE_SIZE_
-; 0000 00E1 #pragma optsize+
-; 0000 00E2 #endif
-; 0000 00E3 
-; 0000 00E4 // Input/Output Ports initialization
-; 0000 00E5 // Port B initialization
-; 0000 00E6 // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In
-; 0000 00E7 DDRB=(0<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (0<<DDB2) | (0<<DDB1) | (0<<DDB0);
-;PCODE: $000002E1 VOL: 0
-;PCODE: $000002E2 VOL: 0
-; 0000 00E8 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
-; 0000 00E9 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<PORTB2) | (0<<PORTB1) | (0<<PORTB0);
-;PCODE: $000002E3 VOL: 0
-;PCODE: $000002E4 VOL: 0
-; 0000 00EA 
-; 0000 00EB // Port C initialization
-; 0000 00EC // Function: Bit6=In Bit5=In Bit4=In Bit3=In Bit2=Out Bit1=Out Bit0=Out
-; 0000 00ED DDRC=(0<<DDC6) | (0<<DDC5) | (0<<DDC4) | (0<<DDC3) | (1<<DDC2) | (1<<DDC1) | (1<<DDC0);
-;PCODE: $000002E5 VOL: 0
-;PCODE: $000002E6 VOL: 0
-; 0000 00EE // State: Bit6=T Bit5=T Bit4=T Bit3=T Bit2=0 Bit1=0 Bit0=0
-; 0000 00EF PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
-;PCODE: $000002E7 VOL: 0
-;PCODE: $000002E8 VOL: 0
-; 0000 00F0 
-; 0000 00F1 // Port D initialization
-; 0000 00F2 // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In
-; 0000 00F3 DDRD=(0<<DDD7) | (0<<DDD6) | (0<<DDD5) | (0<<DDD4) | (0<<DDD3) | (0<<DDD2) | (0<<DDD1) | (0<<DDD0);
-;PCODE: $000002E9 VOL: 0
-;PCODE: $000002EA VOL: 0
-; 0000 00F4 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
-; 0000 00F5 PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
-;PCODE: $000002EB VOL: 0
-;PCODE: $000002EC VOL: 0
-; 0000 00F6 
-; 0000 00F7 // Timer/Counter 0 initialization
-; 0000 00F8 // Clock source: System Clock
-; 0000 00F9 // Clock value: 1000,000 kHz
-; 0000 00FA // Mode: Normal top=0xFF
-; 0000 00FB // OC0A output: Disconnected
-; 0000 00FC // OC0B output: Disconnected
-; 0000 00FD // Timer Period: 0,1 ms
-; 0000 00FE TCCR0A=(0<<COM0A1) | (0<<COM0A0) | (0<<COM0B1) | (0<<COM0B0) | (0<<WGM01) | (0<<WGM00);
-;PCODE: $000002ED VOL: 0
-;PCODE: $000002EE VOL: 0
-; 0000 00FF TCCR0B=(0<<WGM02) | (0<<CS02) | (1<<CS01) | (0<<CS00);
-;PCODE: $000002EF VOL: 0
-;PCODE: $000002F0 VOL: 0
-; 0000 0100 TCNT0=0x9C;
-;PCODE: $000002F1 VOL: 0
-;PCODE: $000002F2 VOL: 0
-; 0000 0101 OCR0A=0x00;
-;PCODE: $000002F3 VOL: 0
-;PCODE: $000002F4 VOL: 0
-; 0000 0102 OCR0B=0x00;
-;PCODE: $000002F5 VOL: 0
 ;PCODE: $000002F6 VOL: 0
-; 0000 0103 
-; 0000 0104 // Timer/Counter 1 initialization
-; 0000 0105 // Clock source: System Clock
-; 0000 0106 // Clock value: 125,000 kHz
-; 0000 0107 // Mode: Normal top=0xFFFF
-; 0000 0108 // OC1A output: Disconnected
-; 0000 0109 // OC1B output: Disconnected
-; 0000 010A // Noise Canceler: Off
-; 0000 010B // Input Capture on Falling Edge
-; 0000 010C // Timer Period: 0,5 s
-; 0000 010D // Timer1 Overflow Interrupt: On
-; 0000 010E // Input Capture Interrupt: Off
-; 0000 010F // Compare A Match Interrupt: Off
-; 0000 0110 // Compare B Match Interrupt: Off
-; 0000 0111 TCCR1A=(0<<COM1A1) | (0<<COM1A0) | (0<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (0<<WGM10);
 ;PCODE: $000002F7 VOL: 0
+; 0000 00E8 CLKPR=(0<<CLKPCE) | (0<<CLKPS3) | (0<<CLKPS2) | (0<<CLKPS1) | (0<<CLKPS0);
 ;PCODE: $000002F8 VOL: 0
-; 0000 0112 TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (1<<CS11) | (1<<CS10);
 ;PCODE: $000002F9 VOL: 0
+; 0000 00E9 #ifdef _OPTIMIZE_SIZE_
+; 0000 00EA #pragma optsize+
+; 0000 00EB #endif
+; 0000 00EC 
+; 0000 00ED // Input/Output Ports initialization
+; 0000 00EE // Port B initialization
+; 0000 00EF // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In
+; 0000 00F0 DDRB=(0<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (0<<DDB2) | (0<<DDB1) | (0<<DDB0);
 ;PCODE: $000002FA VOL: 0
-; 0000 0113 TCNT1H=0x0B;
 ;PCODE: $000002FB VOL: 0
+; 0000 00F1 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
+; 0000 00F2 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<PORTB2) | (0<<PORTB1) | (0<<PORTB0);
 ;PCODE: $000002FC VOL: 0
-; 0000 0114 TCNT1L=0xDC;
 ;PCODE: $000002FD VOL: 0
+; 0000 00F3 
+; 0000 00F4 // Port C initialization
+; 0000 00F5 // Function: Bit6=In Bit5=In Bit4=In Bit3=In Bit2=Out Bit1=Out Bit0=Out
+; 0000 00F6 DDRC=(0<<DDC6) | (0<<DDC5) | (0<<DDC4) | (0<<DDC3) | (1<<DDC2) | (1<<DDC1) | (1<<DDC0);
 ;PCODE: $000002FE VOL: 0
-; 0000 0115 ICR1H=0x00;
 ;PCODE: $000002FF VOL: 0
+; 0000 00F7 // State: Bit6=T Bit5=T Bit4=T Bit3=T Bit2=0 Bit1=0 Bit0=0
+; 0000 00F8 PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
 ;PCODE: $00000300 VOL: 0
-; 0000 0116 ICR1L=0x00;
 ;PCODE: $00000301 VOL: 0
+; 0000 00F9 
+; 0000 00FA // Port D initialization
+; 0000 00FB // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In
+; 0000 00FC DDRD=(0<<DDD7) | (0<<DDD6) | (0<<DDD5) | (0<<DDD4) | (0<<DDD3) | (0<<DDD2) | (0<<DDD1) | (0<<DDD0);
 ;PCODE: $00000302 VOL: 0
-; 0000 0117 OCR1AH=0x00;
 ;PCODE: $00000303 VOL: 0
+; 0000 00FD // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
+; 0000 00FE PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
 ;PCODE: $00000304 VOL: 0
-; 0000 0118 OCR1AL=0x00;
 ;PCODE: $00000305 VOL: 0
+; 0000 00FF 
+; 0000 0100 // Timer/Counter 0 initialization
+; 0000 0101 // Clock source: System Clock
+; 0000 0102 // Clock value: 1000,000 kHz
+; 0000 0103 // Mode: Normal top=0xFF
+; 0000 0104 // OC0A output: Disconnected
+; 0000 0105 // OC0B output: Disconnected
+; 0000 0106 // Timer Period: 0,1 ms
+; 0000 0107 TCCR0A=(0<<COM0A1) | (0<<COM0A0) | (0<<COM0B1) | (0<<COM0B0) | (0<<WGM01) | (0<<WGM00);
 ;PCODE: $00000306 VOL: 0
-; 0000 0119 OCR1BH=0x00;
 ;PCODE: $00000307 VOL: 0
+; 0000 0108 TCCR0B=(0<<WGM02) | (0<<CS02) | (1<<CS01) | (0<<CS00);
 ;PCODE: $00000308 VOL: 0
-; 0000 011A OCR1BL=0x00;
 ;PCODE: $00000309 VOL: 0
+; 0000 0109 TCNT0=0x9C;
 ;PCODE: $0000030A VOL: 0
-; 0000 011B 
-; 0000 011C // Timer/Counter 2 initialization
-; 0000 011D // Clock source: System Clock
-; 0000 011E // Clock value: Timer2 Stopped
-; 0000 011F // Mode: Normal top=0xFF
-; 0000 0120 // OC2A output: Disconnected
-; 0000 0121 // OC2B output: Disconnected
-; 0000 0122 ASSR=(0<<EXCLK) | (0<<AS2);
 ;PCODE: $0000030B VOL: 0
+; 0000 010A OCR0A=0x00;
 ;PCODE: $0000030C VOL: 0
-; 0000 0123 TCCR2A=(0<<COM2A1) | (0<<COM2A0) | (0<<COM2B1) | (0<<COM2B0) | (0<<WGM21) | (0<<WGM20);
 ;PCODE: $0000030D VOL: 0
+; 0000 010B OCR0B=0x00;
 ;PCODE: $0000030E VOL: 0
-; 0000 0124 TCCR2B=(0<<WGM22) | (0<<CS22) | (0<<CS21) | (0<<CS20);
 ;PCODE: $0000030F VOL: 0
+; 0000 010C 
+; 0000 010D // Timer/Counter 1 initialization
+; 0000 010E // Clock source: System Clock
+; 0000 010F // Clock value: 125,000 kHz
+; 0000 0110 // Mode: Normal top=0xFFFF
+; 0000 0111 // OC1A output: Disconnected
+; 0000 0112 // OC1B output: Disconnected
+; 0000 0113 // Noise Canceler: Off
+; 0000 0114 // Input Capture on Falling Edge
+; 0000 0115 // Timer Period: 0,5 s
+; 0000 0116 // Timer1 Overflow Interrupt: On
+; 0000 0117 // Input Capture Interrupt: Off
+; 0000 0118 // Compare A Match Interrupt: Off
+; 0000 0119 // Compare B Match Interrupt: Off
+; 0000 011A TCCR1A=(0<<COM1A1) | (0<<COM1A0) | (0<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (0<<WGM10);
 ;PCODE: $00000310 VOL: 0
-; 0000 0125 TCNT2=0x00;
 ;PCODE: $00000311 VOL: 0
+; 0000 011B TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (1<<CS11) | (1<<CS10);
 ;PCODE: $00000312 VOL: 0
-; 0000 0126 OCR2A=0x00;
 ;PCODE: $00000313 VOL: 0
+; 0000 011C TCNT1H=0x0B;
 ;PCODE: $00000314 VOL: 0
-; 0000 0127 OCR2B=0x00;
 ;PCODE: $00000315 VOL: 0
+; 0000 011D TCNT1L=0xDC;
 ;PCODE: $00000316 VOL: 0
-; 0000 0128 
-; 0000 0129 // Timer/Counter 0 Interrupt(s) initialization
-; 0000 012A TIMSK0=(0<<OCIE0B) | (0<<OCIE0A) | (1<<TOIE0);
 ;PCODE: $00000317 VOL: 0
+; 0000 011E ICR1H=0x00;
 ;PCODE: $00000318 VOL: 0
-; 0000 012B 
-; 0000 012C // Timer/Counter 1 Interrupt(s) initialization
-; 0000 012D TIMSK1=(0<<ICIE1) | (0<<OCIE1B) | (0<<OCIE1A) | (1<<TOIE1);
 ;PCODE: $00000319 VOL: 0
+; 0000 011F ICR1L=0x00;
 ;PCODE: $0000031A VOL: 0
-; 0000 012E 
-; 0000 012F // Timer/Counter 2 Interrupt(s) initialization
-; 0000 0130 TIMSK2=(0<<OCIE2B) | (0<<OCIE2A) | (0<<TOIE2);
 ;PCODE: $0000031B VOL: 0
+; 0000 0120 OCR1AH=0x00;
 ;PCODE: $0000031C VOL: 0
-; 0000 0131 
-; 0000 0132 // External Interrupt(s) initialization
-; 0000 0133 // INT0: Off
-; 0000 0134 // INT1: Off
-; 0000 0135 // Interrupt on any change on pins PCINT0-7: On
-; 0000 0136 // Interrupt on any change on pins PCINT8-14: Off
-; 0000 0137 // Interrupt on any change on pins PCINT16-23: Off
-; 0000 0138 EICRA=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
 ;PCODE: $0000031D VOL: 0
+; 0000 0121 OCR1AL=0x00;
 ;PCODE: $0000031E VOL: 0
-; 0000 0139 EIMSK=(0<<INT1) | (0<<INT0);
 ;PCODE: $0000031F VOL: 0
+; 0000 0122 OCR1BH=0x00;
 ;PCODE: $00000320 VOL: 0
-; 0000 013A PCICR=(0<<PCIE2) | (0<<PCIE1) | (1<<PCIE0);
 ;PCODE: $00000321 VOL: 0
+; 0000 0123 OCR1BL=0x00;
 ;PCODE: $00000322 VOL: 0
-; 0000 013B PCMSK0=(0<<PCINT7) | (0<<PCINT6) | (1<<PCINT5) | (1<<PCINT4) | (1<<PCINT3) | (0<<PCINT2) | (0<<PCINT1) | (0<<PCINT0);
 ;PCODE: $00000323 VOL: 0
+; 0000 0124 
+; 0000 0125 // Timer/Counter 2 initialization
+; 0000 0126 // Clock source: System Clock
+; 0000 0127 // Clock value: Timer2 Stopped
+; 0000 0128 // Mode: Normal top=0xFF
+; 0000 0129 // OC2A output: Disconnected
+; 0000 012A // OC2B output: Disconnected
+; 0000 012B ASSR=(0<<EXCLK) | (0<<AS2);
 ;PCODE: $00000324 VOL: 0
-; 0000 013C PCIFR=(0<<PCIF2) | (0<<PCIF1) | (1<<PCIF0);
 ;PCODE: $00000325 VOL: 0
+; 0000 012C TCCR2A=(0<<COM2A1) | (0<<COM2A0) | (0<<COM2B1) | (0<<COM2B0) | (0<<WGM21) | (0<<WGM20);
 ;PCODE: $00000326 VOL: 0
-; 0000 013D 
-; 0000 013E // USART initialization
-; 0000 013F // Communication Parameters: 8 Data, 1 Stop, No Parity
-; 0000 0140 // USART Receiver: Off
-; 0000 0141 // USART Transmitter: On
-; 0000 0142 // USART0 Mode: Asynchronous
-; 0000 0143 // USART Baud Rate: 9600
-; 0000 0144 UCSR0A=(0<<RXC0) | (0<<TXC0) | (0<<UDRE0) | (0<<FE0) | (0<<DOR0) | (0<<UPE0) | (0<<U2X0) | (0<<MPCM0);
 ;PCODE: $00000327 VOL: 0
+; 0000 012D TCCR2B=(0<<WGM22) | (0<<CS22) | (0<<CS21) | (0<<CS20);
 ;PCODE: $00000328 VOL: 0
-; 0000 0145 UCSR0B=(0<<RXCIE0) | (0<<TXCIE0) | (0<<UDRIE0) | (0<<RXEN0) | (1<<TXEN0) | (0<<UCSZ02) | (0<<RXB80) | (0<<TXB80);
 ;PCODE: $00000329 VOL: 0
+; 0000 012E TCNT2=0x00;
 ;PCODE: $0000032A VOL: 0
-; 0000 0146 UCSR0C=(0<<UMSEL01) | (0<<UMSEL00) | (0<<UPM01) | (0<<UPM00) | (0<<USBS0) | (1<<UCSZ01) | (1<<UCSZ00) | (0<<UCPOL0);
 ;PCODE: $0000032B VOL: 0
+; 0000 012F OCR2A=0x00;
 ;PCODE: $0000032C VOL: 0
-; 0000 0147 UBRR0H=0x00;
 ;PCODE: $0000032D VOL: 0
+; 0000 0130 OCR2B=0x00;
 ;PCODE: $0000032E VOL: 0
-; 0000 0148 UBRR0L=0x33;
 ;PCODE: $0000032F VOL: 0
+; 0000 0131 
+; 0000 0132 // Timer/Counter 0 Interrupt(s) initialization
+; 0000 0133 TIMSK0=(0<<OCIE0B) | (0<<OCIE0A) | (1<<TOIE0);
 ;PCODE: $00000330 VOL: 0
-; 0000 0149 
-; 0000 014A // Analog Comparator initialization
-; 0000 014B // Analog Comparator: Off
-; 0000 014C // The Analog Comparator's positive input is
-; 0000 014D // connected to the AIN0 pin
-; 0000 014E // The Analog Comparator's negative input is
-; 0000 014F // connected to the AIN1 pin
-; 0000 0150 ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
 ;PCODE: $00000331 VOL: 0
+; 0000 0134 
+; 0000 0135 // Timer/Counter 1 Interrupt(s) initialization
+; 0000 0136 TIMSK1=(0<<ICIE1) | (0<<OCIE1B) | (0<<OCIE1A) | (1<<TOIE1);
 ;PCODE: $00000332 VOL: 0
-; 0000 0151 ADCSRB=(0<<ACME);
 ;PCODE: $00000333 VOL: 0
+; 0000 0137 
+; 0000 0138 // Timer/Counter 2 Interrupt(s) initialization
+; 0000 0139 TIMSK2=(0<<OCIE2B) | (0<<OCIE2A) | (0<<TOIE2);
 ;PCODE: $00000334 VOL: 0
-; 0000 0152 // Digital input buffer on AIN0: On
-; 0000 0153 // Digital input buffer on AIN1: On
-; 0000 0154 DIDR1=(0<<AIN0D) | (0<<AIN1D);
 ;PCODE: $00000335 VOL: 0
+; 0000 013A 
+; 0000 013B // External Interrupt(s) initialization
+; 0000 013C // INT0: Off
+; 0000 013D // INT1: Off
+; 0000 013E // Interrupt on any change on pins PCINT0-7: On
+; 0000 013F // Interrupt on any change on pins PCINT8-14: Off
+; 0000 0140 // Interrupt on any change on pins PCINT16-23: Off
+; 0000 0141 EICRA=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
 ;PCODE: $00000336 VOL: 0
-; 0000 0155 
-; 0000 0156 // ADC initialization
-; 0000 0157 // ADC disabled
-; 0000 0158 ADCSRA=(0<<ADEN) | (0<<ADSC) | (0<<ADATE) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (0<<ADPS1) | (0<<ADPS0);
 ;PCODE: $00000337 VOL: 0
+; 0000 0142 EIMSK=(0<<INT1) | (0<<INT0);
 ;PCODE: $00000338 VOL: 0
-; 0000 0159 
-; 0000 015A // SPI initialization
-; 0000 015B // SPI disabled
-; 0000 015C SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
 ;PCODE: $00000339 VOL: 0
+; 0000 0143 PCICR=(0<<PCIE2) | (0<<PCIE1) | (1<<PCIE0);
 ;PCODE: $0000033A VOL: 0
-; 0000 015D 
-; 0000 015E // TWI initialization
-; 0000 015F // TWI disabled
-; 0000 0160 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 ;PCODE: $0000033B VOL: 0
+; 0000 0144 PCMSK0=(0<<PCINT7) | (0<<PCINT6) | (1<<PCINT5) | (1<<PCINT4) | (1<<PCINT3) | (0<<PCINT2) | (0<<PCINT1) | (0<<PCINT0);
 ;PCODE: $0000033C VOL: 0
-; 0000 0161 
-; 0000 0162 // 1 Wire Bus initialization
-; 0000 0163 // 1 Wire Data port: PORTD
-; 0000 0164 // 1 Wire Data bit: 5
-; 0000 0165 // Note: 1 Wire port settings are specified in the
-; 0000 0166 // Project|Configure|C Compiler|Libraries|1 Wire menu.
-; 0000 0167 
-; 0000 0168 ds1820_init();
 ;PCODE: $0000033D VOL: 0
-; 0000 0169 // Global enable interrupts
-; 0000 016A 
-; 0000 016B set_power_ten1(0);
+; 0000 0145 PCIFR=(0<<PCIF2) | (0<<PCIF1) | (1<<PCIF0);
 ;PCODE: $0000033E VOL: 0
 ;PCODE: $0000033F VOL: 0
+; 0000 0146 
+; 0000 0147 // USART initialization
+; 0000 0148 // Communication Parameters: 8 Data, 1 Stop, No Parity
+; 0000 0149 // USART Receiver: Off
+; 0000 014A // USART Transmitter: On
+; 0000 014B // USART0 Mode: Asynchronous
+; 0000 014C // USART Baud Rate: 9600
+; 0000 014D UCSR0A=(0<<RXC0) | (0<<TXC0) | (0<<UDRE0) | (0<<FE0) | (0<<DOR0) | (0<<UPE0) | (0<<U2X0) | (0<<MPCM0);
 ;PCODE: $00000340 VOL: 0
-; 0000 016C set_power_ten2(0);
 ;PCODE: $00000341 VOL: 0
+; 0000 014E UCSR0B=(0<<RXCIE0) | (0<<TXCIE0) | (0<<UDRIE0) | (0<<RXEN0) | (1<<TXEN0) | (0<<UCSZ02) | (0<<RXB80) | (0<<TXB80);
 ;PCODE: $00000342 VOL: 0
 ;PCODE: $00000343 VOL: 0
-; 0000 016D set_power_ten3(0);
+; 0000 014F UCSR0C=(0<<UMSEL01) | (0<<UMSEL00) | (0<<UPM01) | (0<<UPM00) | (0<<USBS0) | (1<<UCSZ01) | (1<<UCSZ00) | (0<<UCPOL0);
 ;PCODE: $00000344 VOL: 0
 ;PCODE: $00000345 VOL: 0
+; 0000 0150 UBRR0H=0x00;
 ;PCODE: $00000346 VOL: 0
-; 0000 016E #asm("sei")
 ;PCODE: $00000347 VOL: 0
-	sei
+; 0000 0151 UBRR0L=0x33;
 ;PCODE: $00000348 VOL: 0
-; 0000 016F 
-; 0000 0170 
-; 0000 0171   Init_pid();
 ;PCODE: $00000349 VOL: 0
-; 0000 0172 printf("start \n\r");
+; 0000 0152 
+; 0000 0153 // Analog Comparator initialization
+; 0000 0154 // Analog Comparator: Off
+; 0000 0155 // The Analog Comparator's positive input is
+; 0000 0156 // connected to the AIN0 pin
+; 0000 0157 // The Analog Comparator's negative input is
+; 0000 0158 // connected to the AIN1 pin
+; 0000 0159 ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
 ;PCODE: $0000034A VOL: 0
 ;PCODE: $0000034B VOL: 0
+; 0000 015A ADCSRB=(0<<ACME);
 ;PCODE: $0000034C VOL: 0
 ;PCODE: $0000034D VOL: 0
+; 0000 015B // Digital input buffer on AIN0: On
+; 0000 015C // Digital input buffer on AIN1: On
+; 0000 015D DIDR1=(0<<AIN0D) | (0<<AIN1D);
 ;PCODE: $0000034E VOL: 0
 ;PCODE: $0000034F VOL: 0
+; 0000 015E 
+; 0000 015F // ADC initialization
+; 0000 0160 // ADC disabled
+; 0000 0161 ADCSRA=(0<<ADEN) | (0<<ADSC) | (0<<ADATE) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (0<<ADPS1) | (0<<ADPS0);
 ;PCODE: $00000350 VOL: 0
-; 0000 0173 while (1)
 ;PCODE: $00000351 VOL: 0
-; 0000 0174       {
-; 0000 0175       // Place your code here
-; 0000 0176     if(pid_frag)
+; 0000 0162 
+; 0000 0163 // SPI initialization
+; 0000 0164 // SPI disabled
+; 0000 0165 SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
 ;PCODE: $00000352 VOL: 0
 ;PCODE: $00000353 VOL: 0
+; 0000 0166 
+; 0000 0167 // TWI initialization
+; 0000 0168 // TWI disabled
+; 0000 0169 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 ;PCODE: $00000354 VOL: 0
-; 0000 0177     {
-; 0000 0178         if(temp1<1200)
-;PCODE: $00000355 VOL: 1
+;PCODE: $00000355 VOL: 0
+; 0000 016A 
+; 0000 016B // 1 Wire Bus initialization
+; 0000 016C // 1 Wire Data port: PORTD
+; 0000 016D // 1 Wire Data bit: 5
+; 0000 016E // Note: 1 Wire port settings are specified in the
+; 0000 016F // Project|Configure|C Compiler|Libraries|1 Wire menu.
+; 0000 0170 
+; 0000 0171 ds1820_init();
 ;PCODE: $00000356 VOL: 0
+; 0000 0172 // Global enable interrupts
+; 0000 0173 
+; 0000 0174 set_power_ten1(0);
 ;PCODE: $00000357 VOL: 0
-; 0000 0179         {
-; 0000 017A             power_to_ten1 = pid_Controller(maxtemp1,temp1, &pidData1);
 ;PCODE: $00000358 VOL: 0
 ;PCODE: $00000359 VOL: 0
-;PCODE: $0000035A VOL: 1
+; 0000 0175 set_power_ten2(0);
+;PCODE: $0000035A VOL: 0
 ;PCODE: $0000035B VOL: 0
 ;PCODE: $0000035C VOL: 0
+; 0000 0176 set_power_ten3(0);
 ;PCODE: $0000035D VOL: 0
 ;PCODE: $0000035E VOL: 0
-; 0000 017B         }
-; 0000 017C         else
 ;PCODE: $0000035F VOL: 0
+; 0000 0177 #asm("sei")
 ;PCODE: $00000360 VOL: 0
-; 0000 017D         {
-; 0000 017E             error_cnt++;
-;PCODE: $00000361 VOL: 1
+	sei
+;PCODE: $00000361 VOL: 0
+; 0000 0178 
+; 0000 0179 
+; 0000 017A   Init_pid();
 ;PCODE: $00000362 VOL: 0
+; 0000 017B printf("start \n\r");
 ;PCODE: $00000363 VOL: 0
 ;PCODE: $00000364 VOL: 0
-; 0000 017F         }
 ;PCODE: $00000365 VOL: 0
-; 0000 0180 
-; 0000 0181          set_power_ten1(power_to_ten1);
 ;PCODE: $00000366 VOL: 0
 ;PCODE: $00000367 VOL: 0
-; 0000 0182 
-; 0000 0183 
-; 0000 0184          printf("mV=%i  ",temp1);
 ;PCODE: $00000368 VOL: 0
 ;PCODE: $00000369 VOL: 0
+; 0000 017C while (1)
 ;PCODE: $0000036A VOL: 0
-;PCODE: $0000036B VOL: 1
+; 0000 017D {
+; 0000 017E       // Place your code here
+; 0000 017F     if(pid_frag)
+;PCODE: $0000036B VOL: 0
 ;PCODE: $0000036C VOL: 0
 ;PCODE: $0000036D VOL: 0
-;PCODE: $0000036E VOL: 0
-;PCODE: $0000036F VOL: 0
+; 0000 0180     {
+; 0000 0181         if (mode_temp>temp4)
+;PCODE: $0000036E VOL: 1
+;PCODE: $0000036F VOL: 1
 ;PCODE: $00000370 VOL: 0
 ;PCODE: $00000371 VOL: 0
-; 0000 0185           printf("oV=%i \n\r",power_to_ten1);
-;PCODE: $00000372 VOL: 0
+; 0000 0182         {
+; 0000 0183             if(temp1<1200 && temp1!=-1)
+;PCODE: $00000372 VOL: 1
 ;PCODE: $00000373 VOL: 0
 ;PCODE: $00000374 VOL: 0
-;PCODE: $00000375 VOL: 0
+;PCODE: $00000375 VOL: 1
 ;PCODE: $00000376 VOL: 0
 ;PCODE: $00000377 VOL: 0
 ;PCODE: $00000378 VOL: 0
 ;PCODE: $00000379 VOL: 0
 ;PCODE: $0000037A VOL: 0
 ;PCODE: $0000037B VOL: 0
-; 0000 0186         pid_frag=0;
+; 0000 0184             {
+; 0000 0185                 power_to_ten1 = pid_Controller(maxtemp1,temp1, &pidData1);
 ;PCODE: $0000037C VOL: 0
 ;PCODE: $0000037D VOL: 0
-; 0000 0187     }
-; 0000 0188       }
-;PCODE: $0000037E VOL: 0
+;PCODE: $0000037E VOL: 1
 ;PCODE: $0000037F VOL: 0
 ;PCODE: $00000380 VOL: 0
-; 0000 0189 }
 ;PCODE: $00000381 VOL: 0
 ;PCODE: $00000382 VOL: 0
+; 0000 0186             }
+; 0000 0187             else
 ;PCODE: $00000383 VOL: 0
+;PCODE: $00000384 VOL: 0
+; 0000 0188             {
+; 0000 0189                 power_to_ten1=0;
+;PCODE: $00000385 VOL: 0
+;PCODE: $00000386 VOL: 0
+; 0000 018A             }
+;PCODE: $00000387 VOL: 0
+; 0000 018B         }
+; 0000 018C         else
+;PCODE: $00000388 VOL: 0
+;PCODE: $00000389 VOL: 0
+; 0000 018D         {
+; 0000 018E             power_to_ten1=0;power_to_ten2=0;power_to_ten3=0;
+;PCODE: $0000038A VOL: 0
+;PCODE: $0000038B VOL: 0
+;PCODE: $0000038C VOL: 0
+;PCODE: $0000038D VOL: 0
+;PCODE: $0000038E VOL: 0
+;PCODE: $0000038F VOL: 0
+; 0000 018F         }
+;PCODE: $00000390 VOL: 0
+; 0000 0190         set_power_ten1(power_to_ten1);
+;PCODE: $00000391 VOL: 0
+;PCODE: $00000392 VOL: 0
+; 0000 0191         set_power_ten2(power_to_ten2);
+;PCODE: $00000393 VOL: 0
+;PCODE: $00000394 VOL: 0
+; 0000 0192         set_power_ten3(power_to_ten3);
+;PCODE: $00000395 VOL: 0
+;PCODE: $00000396 VOL: 0
+; 0000 0193         if(temp1>1200 || temp1==-1) error_cnt++;
+;PCODE: $00000397 VOL: 1
+;PCODE: $00000398 VOL: 0
+;PCODE: $00000399 VOL: 0
+;PCODE: $0000039A VOL: 1
+;PCODE: $0000039B VOL: 0
+;PCODE: $0000039C VOL: 0
+;PCODE: $0000039D VOL: 0
+;PCODE: $0000039E VOL: 0
+;PCODE: $0000039F VOL: 1
+;PCODE: $000003A0 VOL: 0
+;PCODE: $000003A1 VOL: 0
+;PCODE: $000003A2 VOL: 0
+; 0000 0194         if(temp2>1200 || temp2==-1) error_cnt++;
+;PCODE: $000003A3 VOL: 0
+;PCODE: $000003A4 VOL: 1
+;PCODE: $000003A5 VOL: 0
+;PCODE: $000003A6 VOL: 0
+;PCODE: $000003A7 VOL: 1
+;PCODE: $000003A8 VOL: 0
+;PCODE: $000003A9 VOL: 0
+;PCODE: $000003AA VOL: 0
+;PCODE: $000003AB VOL: 0
+;PCODE: $000003AC VOL: 1
+;PCODE: $000003AD VOL: 0
+;PCODE: $000003AE VOL: 0
+;PCODE: $000003AF VOL: 0
+; 0000 0195         if(temp3>1200 || temp3==-1) error_cnt++;
+;PCODE: $000003B0 VOL: 0
+;PCODE: $000003B1 VOL: 1
+;PCODE: $000003B2 VOL: 0
+;PCODE: $000003B3 VOL: 0
+;PCODE: $000003B4 VOL: 1
+;PCODE: $000003B5 VOL: 0
+;PCODE: $000003B6 VOL: 0
+;PCODE: $000003B7 VOL: 0
+;PCODE: $000003B8 VOL: 0
+;PCODE: $000003B9 VOL: 1
+;PCODE: $000003BA VOL: 0
+;PCODE: $000003BB VOL: 0
+;PCODE: $000003BC VOL: 0
+; 0000 0196         if(temp4>1200 || temp4==-1) error_cnt++;
+;PCODE: $000003BD VOL: 0
+;PCODE: $000003BE VOL: 1
+;PCODE: $000003BF VOL: 0
+;PCODE: $000003C0 VOL: 0
+;PCODE: $000003C1 VOL: 1
+;PCODE: $000003C2 VOL: 0
+;PCODE: $000003C3 VOL: 0
+;PCODE: $000003C4 VOL: 0
+;PCODE: $000003C5 VOL: 0
+;PCODE: $000003C6 VOL: 1
+;PCODE: $000003C7 VOL: 0
+;PCODE: $000003C8 VOL: 0
+;PCODE: $000003C9 VOL: 0
+; 0000 0197         printf("err=%i  ", error_cnt);
+;PCODE: $000003CA VOL: 0
+;PCODE: $000003CB VOL: 0
+;PCODE: $000003CC VOL: 0
+;PCODE: $000003CD VOL: 0
+;PCODE: $000003CE VOL: 1
+;PCODE: $000003CF VOL: 0
+;PCODE: $000003D0 VOL: 0
+;PCODE: $000003D1 VOL: 0
+;PCODE: $000003D2 VOL: 0
+;PCODE: $000003D3 VOL: 0
+;PCODE: $000003D4 VOL: 0
+; 0000 0198         printf("mV=%i  ",temp1);
+;PCODE: $000003D5 VOL: 0
+;PCODE: $000003D6 VOL: 0
+;PCODE: $000003D7 VOL: 0
+;PCODE: $000003D8 VOL: 1
+;PCODE: $000003D9 VOL: 0
+;PCODE: $000003DA VOL: 0
+;PCODE: $000003DB VOL: 0
+;PCODE: $000003DC VOL: 0
+;PCODE: $000003DD VOL: 0
+;PCODE: $000003DE VOL: 0
+; 0000 0199         printf("oV=%i \n\r",power_to_ten1);
+;PCODE: $000003DF VOL: 0
+;PCODE: $000003E0 VOL: 0
+;PCODE: $000003E1 VOL: 0
+;PCODE: $000003E2 VOL: 0
+;PCODE: $000003E3 VOL: 0
+;PCODE: $000003E4 VOL: 0
+;PCODE: $000003E5 VOL: 0
+;PCODE: $000003E6 VOL: 0
+;PCODE: $000003E7 VOL: 0
+;PCODE: $000003E8 VOL: 0
+; 0000 019A         pid_frag=0;
+;PCODE: $000003E9 VOL: 0
+;PCODE: $000003EA VOL: 0
+; 0000 019B     }
+; 0000 019C 
+; 0000 019D }
+;PCODE: $000003EB VOL: 0
+;PCODE: $000003EC VOL: 0
+;PCODE: $000003ED VOL: 0
+; 0000 019E }
+;PCODE: $000003EE VOL: 0
+;PCODE: $000003EF VOL: 0
+;PCODE: $000003F0 VOL: 0

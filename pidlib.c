@@ -1,28 +1,3 @@
-/*This file has been prepared for Doxygen automatic documentation generation.*/
-/*! \file *********************************************************************
- *
- * \brief General PID implementation for AVR.
- *
- * Discrete PID controller implementation. Set up by giving P/I/D terms
- * to Init_PID(), and uses a struct PID_DATA to store internal values.
- *
- * - File:               pid.c
- * - Compiler:           IAR EWAAVR 4.11A
- * - Supported devices:  All AVR devices can be used.
- * - AppNote:            AVR221 - Discrete PID controller
- *
- * \author               Atmel Corporation: http://www.atmel.com \n
- *                       Support email: avr@atmel.com
- *
- * $Name$
- * $Revision: 456 $
- * $RCSfile$
- * $Date: 2006-02-16 12:46:13 +0100 (to, 16 feb 2006) $
- *****************************************************************************/
-
-
-
-
 /*! \brief Initialisation of PID controller parameters.
  *
  *  Initialise the variables used by the PID algorithm.

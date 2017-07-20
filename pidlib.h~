@@ -18,7 +18,7 @@
  *****************************************************************************/
 
 
-#include "pidlib.c"
+
 
 #define SCALING_FACTOR  128
 
@@ -56,6 +56,8 @@ typedef struct PID_DATA{
 // Boolean values
 #define FALSE           0
 #define TRUE            1
+
+#include "pidlib.c"
 
 void pid_Init(signed int p_factor, signed int i_factor, signed int d_factor, struct PID_DATA *pid);
 signed int pid_Controller(signed int setPoint, signed int processValue, struct PID_DATA *pid_st);

@@ -44,7 +44,8 @@ void pid_Init(signed int p_factor, signed int i_factor, signed int d_factor, str
   pid->D_Factor = d_factor;
   // Limits to avoid overflow
   pid->maxError = MAX_INT / (pid->P_Factor + 1);
-  pid->maxSumError = MAX_I_TERM / (pid->I_Factor + 1);
+  pid->maxSumError = MAX_I_TERM / (pid->I_Factor + 1); 
+
 }
 
 

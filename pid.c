@@ -28,9 +28,13 @@
 #define fan PORTB.2
 
 
-#define K_P     1.00
-#define K_I     0.50
-#define K_D     0.30
+#define K_P     0.20
+#define K_I     0.00
+#define K_D     0.00
+
+#define maxtemp1  800 // одиниця на 0.0625 градуса
+#define maxtemp2  800 // одиниця на 0.0625 градуса
+#define maxtemp3  800 // одиниця на 0.0625 градуса
 
 #include <mega328.h>
 // Standard Input/Output functions
@@ -44,12 +48,13 @@
 volatile char delay_pow1=0,delay_pow2=0,delay_pow3=0;
 volatile char pow1=0,pow2=0,pow3=0;
 volatile int temp1,temp2,temp3,temp4;
-
-struct PID_DATA pidData;
+volatile unsigned char res1=0,res2=0,res3=0,res4=0;
+volatile int error_cnt=0;
+struct PID_DATA pidData1;
 bit pid_frag=0;
 void Init_pid(void)
 {
-  pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData);
+    pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData1);
 }
 int w1_find(void)
 {
@@ -70,7 +75,6 @@ int w1_find(void)
 void w1_send(char cmd)
 {
     unsigned char bitc=0; 
-    #asm("cli") // запрещаем прерывания, что бы не было сбоев при передачи
     for (bitc=0; bitc < 8; bitc++)
      {
         if (cmd&0x01) // сравниваем младший бит
@@ -93,16 +97,14 @@ void w1_send(char cmd)
         };          
         cmd=cmd>>1; //сдвигаем передаваемый байт данных на 1 в сторону младших разрядов
         };
-    #asm("sei")
 }
 
 
-char w1_readbyte(char n_ter)
+char w1_readbyte()
 {
     unsigned char bitc=0;// счетчик принятых байт
     unsigned char res=0; // принятый байт
-    #asm("cli")
-
+    res1=0;res2=0;res3=0;res4=0;
     for (bitc=0; bitc < 8; bitc++)
         {
         t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
@@ -111,25 +113,22 @@ char w1_readbyte(char n_ter)
         t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
         delay_us(14);     // ждем завершения переходных процессов
 
-        if (t1_pin && n_ter==1){res=res|(1 << bitc);} 
-        if (t2_pin && n_ter==2){res=res|(1 << bitc);}
-        if (t3_pin && n_ter==3){res=res|(1 << bitc);}
-        if (t4_pin && n_ter==4){res=res|(1 << bitc);}
+        if (t1_pin){res1=res1|(1 << bitc);} 
+        if (t2_pin){res2=res2|(1 << bitc);}
+        if (t3_pin){res3=res3|(1 << bitc);}
+        if (t4_pin){res4=res4|(1 << bitc);}
         delay_us(45); // ждем до завершения тайм слота
         };
         delay_us(5);
-    #asm("sei")
     return res;
 }
 void send_start_measurement(void)
 {
  
-    if (w1_find()==4)
-    { 
-       w1_send(0xcc);  // пропустить ром
-       w1_send(0x44);
-    } 
-
+    w1_find();
+    w1_send(0xcc);  // пропустить ром
+    w1_send(0x44);
+   
 
 }
 void ds1820_init(void)
@@ -143,48 +142,21 @@ void ds1820_init(void)
 }
 void read_temp(void)
 {
-    unsigned char data[2];
-    int temp = 0;
+    unsigned char data[4];
     w1_find();//снова посылаем Presence и Reset
     w1_send(0xcc);
-    w1_send(0xbe);//передать байты ведущему(у 18b20 в первых двух содержится температура)
-    data[0] = w1_readbyte(1);
-    data[1] = w1_readbyte(1);
-    temp = data[1];
-    temp = temp<<8;
-    temp |= data[0];
-    temp1=temp* 0.0625;
-     w1_find();//снова посылаем Presence и Reset
-    w1_send(0xcc);
-    w1_send(0xbe); 
-    data[0] = w1_readbyte(2);
-    data[1] = w1_readbyte(2);
-    temp = data[1];
-    temp = temp<<8;
-    temp |= data[0];
-    temp2=temp* 0.0625;
-     w1_find();//снова посылаем Presence и Reset
-    w1_send(0xcc);
-    w1_send(0xbe);
-    data[0] = w1_readbyte(3);
-    data[1] = w1_readbyte(3);
-    temp = data[1];
-    temp = temp<<8;
-    temp |= data[0];
-    temp3=temp* 0.0625; 
-     w1_find();//снова посылаем Presence и Reset
-    w1_send(0xcc);
-    w1_send(0xbe);
-    data[0] = w1_readbyte(4);
-    data[1] = w1_readbyte(4);
-    temp = data[1];
-    temp = temp<<8;
-    temp |= data[0];
-    temp4=temp* 0.0625;
-    printf("temp1=%i  ",temp1);  
-    printf("temp2=%i  ",temp2); 
-    printf("temp3=%i  ",temp3); 
-    printf("temp4=%i \n\r",temp4); 
+    w1_send(0xbe);//передать байты ведущему(у 18b20 в первых двух содержится температура)     
+    w1_readbyte();
+    data[0] = res1; data[1] = res2; data[2] = res3;  data[3] = res4;
+    w1_readbyte();
+    temp1 = (res1<<8)| data[0];
+    temp2 = (res2<<8)| data[1];
+    temp3 = (res3<<8)| data[2];
+    temp4 = (res4<<8)| data[3];
+   // printf("temp1=%i  ",temp1);  
+   // printf("temp2=%i  ",temp2); 
+   // printf("temp3=%i  ",temp3); 
+   // printf("temp4=%i \n\r",temp4); 
     pid_frag=1;
 
 }
@@ -199,9 +171,9 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 {
     bit p1=0,p2=0,p3=0;
     TCNT0=0x9C;
-    if ( delay_pow1<100 ) delay_pow1++;
-    if ( delay_pow2<100 ) delay_pow2++;
-    if ( delay_pow3<100 ) delay_pow3++;
+    if ( delay_pow1<105 ) delay_pow1++;
+    if ( delay_pow2<105 ) delay_pow2++;
+    if ( delay_pow3<105 ) delay_pow3++;
     if (delay_pow1==pow1) p1=1;
     if (delay_pow2==pow2) p2=1;
     if (delay_pow3==pow3) p3=1;
@@ -213,20 +185,37 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 interrupt [TIM1_OVF] void timer1_ovf_isr(void)
 {
 // Reinitialize Timer1 value
-TCNT1H=0xBDC >> 8;
-TCNT1L=0xBDC & 0xff;
-
-    read_temp();
-    send_start_measurement();
-   
-         
+TCNT1H=0xCF2C >> 8;
+TCNT1L=0xCF2C & 0xff;
+     #asm("cli")
+        read_temp();
+        send_start_measurement();
+     #asm("sei")  
+     delay_pow1=0; 
+     delay_pow2=0; 
+     delay_pow3=0;         
 
 }
-
+void set_power_ten1(int power)
+{
+    if (power>99) power=99;
+    if (power>5) { pow1=100-power;} else {pow1=110;}
+   
+}
+void set_power_ten2(int power)
+{
+    if (power>99) power=99;
+    if (power>5) { pow2=100-power;} else {pow2=110;}
+}
+void set_power_ten3(int power)
+{
+    if (power>99) power=99;
+    if (power>5) { pow3=100-power;} else {pow3=110;}
+}
 void main(void)
 {
 // Declare your local variables here
-int referenceValue, measurementValue, inputValue;
+int power_to_ten1, power_to_ten2, power_to_ten3;
 
 // Crystal Oscillator division factor: 1
 #pragma optsize-
@@ -370,12 +359,13 @@ TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 
 ds1820_init();
 // Global enable interrupts
+
+set_power_ten1(0);
+set_power_ten2(0);
+set_power_ten3(0);
 #asm("sei")
 
 
-pow1=20;
-pow2=50;
-pow3=90;
   Init_pid();
 printf("start \n\r");
 while (1)
@@ -383,16 +373,20 @@ while (1)
       // Place your code here
     if(pid_frag)
     {
-        referenceValue = 40;
-        measurementValue = temp1;
+        if(temp1<1200)
+        {
+            power_to_ten1 = pid_Controller(maxtemp1,temp1, &pidData1);
+        }
+        else
+        {
+            error_cnt++;
+        } 
+        
+         set_power_ten1(power_to_ten1);
 
-        inputValue = pid_Controller(referenceValue, measurementValue, &pidData);
-        if (inputValue>100) inputValue=100;
-        if (inputValue<0) inputValue=0;
          
-            printf("referenceValue=%i  ",referenceValue);  
-            printf("measurementValue=%i  ",measurementValue); 
-            printf("inputValue=%i \n\r",inputValue); 
+         printf("mV=%i  ",temp1); 
+          printf("oV=%i \n\r",power_to_ten1); 
         pid_frag=0;
     }
       }

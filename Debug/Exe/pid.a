@@ -25,7 +25,7 @@
 ;
 ;
 ;
-;#define maxtemp1  800 // ћаксимальна температура тену (одиниц€ на 0.0625 градуса)
+;#define maxtemp  800 // ћаксимальна температура тену (одиниц€ на 0.0625 градуса)
 ;
 ;
 ;#define tempmode1  288 // “емпература 1-го режиму (одиниц€ на 0.0625 градуса)
@@ -943,7 +943,7 @@
 ;PCODE: $00000242 VOL: 0
 ;PCODE: $00000243 VOL: 0
 ; 0000 014F             {
-; 0000 0150                if (temp1<maxtemp1)
+; 0000 0150                if (temp1<maxtemp)
 ;PCODE: $00000244 VOL: 1
 ;PCODE: $00000245 VOL: 0
 ;PCODE: $00000246 VOL: 0
@@ -982,7 +982,7 @@
 ; 0000 0161         }
 ;PCODE: $00000257 VOL: 0
 ; 0000 0162 
-; 0000 0163         if (mode_sem==1 && power_to_ten<100)
+; 0000 0163         if (mode_sem==1 && power_to_ten<96)
 ;PCODE: $00000258 VOL: 1
 ;PCODE: $00000259 VOL: 0
 ;PCODE: $0000025A VOL: 0
@@ -1026,22 +1026,17 @@
 ;PCODE: $00000278 VOL: 1
 ; 0000 016C         }
 ;PCODE: $00000279 VOL: 0
-; 0000 016D 
-; 0000 016E 
-; 0000 016F 
-; 0000 0170 
-; 0000 0171 
-; 0000 0172         set_power_ten1(power_to_ten);
+; 0000 016D         set_power_ten1(power_to_ten);
 ;PCODE: $0000027A VOL: 0
 ;PCODE: $0000027B VOL: 1
 ;PCODE: $0000027C VOL: 0
-; 0000 0173         set_power_ten2(power_to_ten);
+; 0000 016E         set_power_ten2(power_to_ten);
 ;PCODE: $0000027D VOL: 1
 ;PCODE: $0000027E VOL: 0
-; 0000 0174         set_power_ten3(power_to_ten);
+; 0000 016F         set_power_ten3(power_to_ten);
 ;PCODE: $0000027F VOL: 1
 ;PCODE: $00000280 VOL: 0
-; 0000 0175         if(temp1>1200 || temp1==-1) error_cnt++;
+; 0000 0170         if(temp1>1200 || temp1==-1) error_cnt++;
 ;PCODE: $00000281 VOL: 1
 ;PCODE: $00000282 VOL: 0
 ;PCODE: $00000283 VOL: 0
@@ -1054,7 +1049,7 @@
 ;PCODE: $0000028A VOL: 0
 ;PCODE: $0000028B VOL: 0
 ;PCODE: $0000028C VOL: 0
-; 0000 0176         if(temp2>1200 || temp2==-1) error_cnt++;
+; 0000 0171         if(temp2>1200 || temp2==-1) error_cnt++;
 ;PCODE: $0000028D VOL: 0
 ;PCODE: $0000028E VOL: 1
 ;PCODE: $0000028F VOL: 0
@@ -1068,14 +1063,14 @@
 ;PCODE: $00000297 VOL: 0
 ;PCODE: $00000298 VOL: 0
 ;PCODE: $00000299 VOL: 0
-; 0000 0177         if (error_cnt>100) error_led=1;
+; 0000 0172         if (error_cnt>100) error_led=1;
 ;PCODE: $0000029A VOL: 0
 ;PCODE: $0000029B VOL: 1
 ;PCODE: $0000029C VOL: 0
 ;PCODE: $0000029D VOL: 0
 ;PCODE: $0000029E VOL: 0
 ;PCODE: $0000029F VOL: 0
-; 0000 0178         printf("err=%i  ", error_cnt);
+; 0000 0173         printf("err=%i  ", error_cnt);
 ;PCODE: $000002A0 VOL: 0
 ;PCODE: $000002A1 VOL: 0
 ;PCODE: $000002A2 VOL: 0
@@ -1087,21 +1082,21 @@
 ;PCODE: $000002A8 VOL: 0
 ;PCODE: $000002A9 VOL: 0
 ;PCODE: $000002AA VOL: 0
-; 0000 0179         tt1=temp1*0.0625;
+; 0000 0174         tt1=temp1*0.0625;
 ;PCODE: $000002AB VOL: 1
 ;PCODE: $000002AC VOL: 0
 ;PCODE: $000002AD VOL: 0
 ;PCODE: $000002AE VOL: 0
 ;PCODE: $000002AF VOL: 0
 ;PCODE: $000002B0 VOL: 0
-; 0000 017A         tt2=temp2*0.0625;
+; 0000 0175         tt2=temp2*0.0625;
 ;PCODE: $000002B1 VOL: 1
 ;PCODE: $000002B2 VOL: 0
 ;PCODE: $000002B3 VOL: 0
 ;PCODE: $000002B4 VOL: 0
 ;PCODE: $000002B5 VOL: 0
 ;PCODE: $000002B6 VOL: 0
-; 0000 017B         printf("t1=%i  ",tt1);
+; 0000 0176         printf("t1=%i  ",tt1);
 ;PCODE: $000002B7 VOL: 0
 ;PCODE: $000002B8 VOL: 0
 ;PCODE: $000002B9 VOL: 0
@@ -1112,7 +1107,7 @@
 ;PCODE: $000002BE VOL: 0
 ;PCODE: $000002BF VOL: 0
 ;PCODE: $000002C0 VOL: 0
-; 0000 017C         printf("t2=%i  ",tt2);
+; 0000 0177         printf("t2=%i  ",tt2);
 ;PCODE: $000002C1 VOL: 0
 ;PCODE: $000002C2 VOL: 0
 ;PCODE: $000002C3 VOL: 0
@@ -1123,7 +1118,7 @@
 ;PCODE: $000002C8 VOL: 0
 ;PCODE: $000002C9 VOL: 0
 ;PCODE: $000002CA VOL: 0
-; 0000 017D         printf("power_to_ten=%i \n\r",power_to_ten);
+; 0000 0178         printf("mode_temp=%i ",mode_temp);
 ;PCODE: $000002CB VOL: 0
 ;PCODE: $000002CC VOL: 0
 ;PCODE: $000002CD VOL: 0
@@ -1134,18 +1129,29 @@
 ;PCODE: $000002D2 VOL: 0
 ;PCODE: $000002D3 VOL: 0
 ;PCODE: $000002D4 VOL: 0
-; 0000 017E         pid_frag=0;
+; 0000 0179         printf("power_to_ten=%i \n\r",power_to_ten);
 ;PCODE: $000002D5 VOL: 0
 ;PCODE: $000002D6 VOL: 0
 ;PCODE: $000002D7 VOL: 0
-; 0000 017F 
-; 0000 0180     }
-; 0000 0181 
-; 0000 0182 }
-;PCODE: $000002D8 VOL: 0
+;PCODE: $000002D8 VOL: 1
 ;PCODE: $000002D9 VOL: 0
 ;PCODE: $000002DA VOL: 0
-; 0000 0183 }
 ;PCODE: $000002DB VOL: 0
 ;PCODE: $000002DC VOL: 0
 ;PCODE: $000002DD VOL: 0
+;PCODE: $000002DE VOL: 0
+; 0000 017A         pid_frag=0;
+;PCODE: $000002DF VOL: 0
+;PCODE: $000002E0 VOL: 0
+;PCODE: $000002E1 VOL: 0
+; 0000 017B 
+; 0000 017C     }
+; 0000 017D 
+; 0000 017E }
+;PCODE: $000002E2 VOL: 0
+;PCODE: $000002E3 VOL: 0
+;PCODE: $000002E4 VOL: 0
+; 0000 017F }
+;PCODE: $000002E5 VOL: 0
+;PCODE: $000002E6 VOL: 0
+;PCODE: $000002E7 VOL: 0

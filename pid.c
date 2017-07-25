@@ -25,7 +25,7 @@
 
 
 
-#define maxtemp1  800 // Максимальна температура тену (одиниця на 0.0625 градуса)
+#define maxtemp  800 // Максимальна температура тену (одиниця на 0.0625 градуса)
 
 
 #define tempmode1  288 // Температура 1-го режиму (одиниця на 0.0625 градуса)
@@ -333,7 +333,7 @@ while (1)
         {
             if(temp1<1200 && temp1!=-1)
             {
-               if (temp1<maxtemp1)
+               if (temp1<maxtemp)
                {
                  mode_sem=1; // Режим зростання потужності
                }
@@ -352,7 +352,7 @@ while (1)
             mode_sem=2; // Режим спадання потужності   
         } 
         
-        if (mode_sem==1 && power_to_ten<100)
+        if (mode_sem==1 && power_to_ten<96)
         {
             power_to_ten++;
         }
@@ -362,11 +362,6 @@ while (1)
             power_to_ten=power_to_ten-20;
             if (power_to_ten<0) {power_to_ten=0;}
         }
-        
-        
-        
-        
-        
         set_power_ten1(power_to_ten);
         set_power_ten2(power_to_ten);
         set_power_ten3(power_to_ten);
@@ -377,7 +372,8 @@ while (1)
         tt1=temp1*0.0625; 
         tt2=temp2*0.0625;
         printf("t1=%i  ",tt1); 
-        printf("t2=%i  ",tt2); 
+        printf("t2=%i  ",tt2);
+        printf("mode_temp=%i ",mode_temp);
         printf("power_to_ten=%i \n\r",power_to_ten); 
         pid_frag=0;  
         

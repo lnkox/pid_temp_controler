@@ -1124,9 +1124,11 @@ _0x0:
 	.DB  0x0,0x65,0x72,0x72,0x3D,0x25,0x69,0x20
 	.DB  0x20,0x0,0x74,0x31,0x3D,0x25,0x69,0x20
 	.DB  0x20,0x0,0x74,0x32,0x3D,0x25,0x69,0x20
-	.DB  0x20,0x0,0x70,0x6F,0x77,0x65,0x72,0x5F
-	.DB  0x74,0x6F,0x5F,0x74,0x65,0x6E,0x3D,0x25
-	.DB  0x69,0x20,0xA,0xD,0x0
+	.DB  0x20,0x0,0x6D,0x6F,0x64,0x65,0x5F,0x74
+	.DB  0x65,0x6D,0x70,0x3D,0x25,0x69,0x20,0x0
+	.DB  0x70,0x6F,0x77,0x65,0x72,0x5F,0x74,0x6F
+	.DB  0x5F,0x74,0x65,0x6E,0x3D,0x25,0x69,0x20
+	.DB  0xA,0xD,0x0
 
 __GLOBAL_INI_TBL:
 	.DW  0x01
@@ -1237,7 +1239,7 @@ __GLOBAL_INI_END:
 ;
 ;
 ;
-;#define maxtemp1  800 // ћаксимальна температура тену (одиниц€ на 0.0625 градуса)
+;#define maxtemp  800 // ћаксимальна температура тену (одиниц€ на 0.0625 градуса)
 ;
 ;
 ;#define tempmode1  288 // “емпература 1-го режиму (одиниц€ на 0.0625 градуса)
@@ -2040,7 +2042,7 @@ _0x64:
 	RJMP _0x63
 _0x65:
 ; 0000 014F             {
-; 0000 0150                if (temp1<maxtemp1)
+; 0000 0150                if (temp1<maxtemp)
 	RCALL SUBOPT_0xC
 	CPI  R26,LOW(0x320)
 	LDI  R30,HIGH(0x320)
@@ -2081,13 +2083,13 @@ _0x60:
 ; 0000 0161         }
 _0x69:
 ; 0000 0162 
-; 0000 0163         if (mode_sem==1 && power_to_ten<100)
+; 0000 0163         if (mode_sem==1 && power_to_ten<96)
 	RCALL SUBOPT_0xE
 	SBIW R26,1
 	BRNE _0x6B
 	RCALL SUBOPT_0xF
-	CPI  R26,LOW(0x64)
-	LDI  R30,HIGH(0x64)
+	CPI  R26,LOW(0x60)
+	LDI  R30,HIGH(0x60)
 	CPC  R27,R30
 	BRLT _0x6C
 _0x6B:
@@ -2126,22 +2128,17 @@ _0x6F:
 	STS  _power_to_ten+1,R30
 ; 0000 016C         }
 _0x70:
-; 0000 016D 
-; 0000 016E 
-; 0000 016F 
-; 0000 0170 
-; 0000 0171 
-; 0000 0172         set_power_ten1(power_to_ten);
+; 0000 016D         set_power_ten1(power_to_ten);
 _0x6D:
 	RCALL SUBOPT_0xF
 	RCALL _set_power_ten1
-; 0000 0173         set_power_ten2(power_to_ten);
+; 0000 016E         set_power_ten2(power_to_ten);
 	RCALL SUBOPT_0xF
 	RCALL _set_power_ten2
-; 0000 0174         set_power_ten3(power_to_ten);
+; 0000 016F         set_power_ten3(power_to_ten);
 	RCALL SUBOPT_0xF
 	RCALL _set_power_ten3
-; 0000 0175         if(temp1>1200 || temp1==-1) error_cnt++;
+; 0000 0170         if(temp1>1200 || temp1==-1) error_cnt++;
 	RCALL SUBOPT_0xC
 	CPI  R26,LOW(0x4B1)
 	LDI  R30,HIGH(0x4B1)
@@ -2154,7 +2151,7 @@ _0x72:
 	LDI  R26,LOW(_error_cnt)
 	LDI  R27,HIGH(_error_cnt)
 	RCALL SUBOPT_0x10
-; 0000 0176         if(temp2>1200 || temp2==-1) error_cnt++;
+; 0000 0171         if(temp2>1200 || temp2==-1) error_cnt++;
 _0x71:
 	RCALL SUBOPT_0xA
 	CPI  R26,LOW(0x4B1)
@@ -2168,7 +2165,7 @@ _0x75:
 	LDI  R26,LOW(_error_cnt)
 	LDI  R27,HIGH(_error_cnt)
 	RCALL SUBOPT_0x10
-; 0000 0177         if (error_cnt>100) error_led=1;
+; 0000 0172         if (error_cnt>100) error_led=1;
 _0x74:
 	LDS  R26,_error_cnt
 	LDS  R27,_error_cnt+1
@@ -2177,47 +2174,53 @@ _0x74:
 	CPC  R27,R30
 	BRLT _0x77
 	SBI  0x18,0
-; 0000 0178         printf("err=%i  ", error_cnt);
+; 0000 0173         printf("err=%i  ", error_cnt);
 _0x77:
 	__POINTW1FN _0x0,9
 	RCALL SUBOPT_0x8
 	LDS  R30,_error_cnt
 	LDS  R31,_error_cnt+1
 	RCALL SUBOPT_0x12
-; 0000 0179         tt1=temp1*0.0625;
+; 0000 0174         tt1=temp1*0.0625;
 	LDS  R30,_temp1
 	LDS  R31,_temp1+1
 	RCALL SUBOPT_0x13
 	MOVW R16,R30
-; 0000 017A         tt2=temp2*0.0625;
+; 0000 0175         tt2=temp2*0.0625;
 	RCALL SUBOPT_0x9
 	RCALL SUBOPT_0x13
 	MOVW R18,R30
-; 0000 017B         printf("t1=%i  ",tt1);
+; 0000 0176         printf("t1=%i  ",tt1);
 	__POINTW1FN _0x0,18
 	RCALL SUBOPT_0x8
 	MOVW R30,R16
 	RCALL SUBOPT_0x12
-; 0000 017C         printf("t2=%i  ",tt2);
+; 0000 0177         printf("t2=%i  ",tt2);
 	__POINTW1FN _0x0,26
 	RCALL SUBOPT_0x8
 	MOVW R30,R18
 	RCALL SUBOPT_0x12
-; 0000 017D         printf("power_to_ten=%i \n\r",power_to_ten);
+; 0000 0178         printf("mode_temp=%i ",mode_temp);
 	__POINTW1FN _0x0,34
+	RCALL SUBOPT_0x8
+	LDS  R30,_mode_temp
+	LDS  R31,_mode_temp+1
+	RCALL SUBOPT_0x12
+; 0000 0179         printf("power_to_ten=%i \n\r",power_to_ten);
+	__POINTW1FN _0x0,48
 	RCALL SUBOPT_0x8
 	RCALL SUBOPT_0x11
 	RCALL SUBOPT_0x12
-; 0000 017E         pid_frag=0;
+; 0000 017A         pid_frag=0;
 	CLT
 	BLD  R2,0
-; 0000 017F 
-; 0000 0180     }
-; 0000 0181 
-; 0000 0182 }
+; 0000 017B 
+; 0000 017C     }
+; 0000 017D 
+; 0000 017E }
 _0x5F:
 	RJMP _0x5C
-; 0000 0183 }
+; 0000 017F }
 _0x7A:
 	RJMP _0x7A
 ; .FEND
@@ -2773,7 +2776,7 @@ SUBOPT_0x7:
 	SUB  R30,R26
 	RET
 
-;OPTIMIZER ADDED SUBROUTINE, CALLED 7 TIMES, CODE SIZE REDUCTION:4 WORDS
+;OPTIMIZER ADDED SUBROUTINE, CALLED 8 TIMES, CODE SIZE REDUCTION:5 WORDS
 SUBOPT_0x8:
 	ST   -Y,R31
 	ST   -Y,R30
@@ -2839,7 +2842,7 @@ SUBOPT_0x11:
 	LDS  R31,_power_to_ten+1
 	RET
 
-;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:13 WORDS
+;OPTIMIZER ADDED SUBROUTINE, CALLED 5 TIMES, CODE SIZE REDUCTION:18 WORDS
 SUBOPT_0x12:
 	RCALL __CWD1
 	RCALL __PUTPARD1

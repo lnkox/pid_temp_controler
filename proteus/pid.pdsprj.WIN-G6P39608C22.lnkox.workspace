@@ -24,6 +24,8 @@
      <ITEM name="Item 1">"temp2","0308",00000001,0000000E,776,2,3,00000003,0,00000000,00000000</ITEM>
      <ITEM name="Item 2">"temp3","030A",00000001,0000000E,778,2,3,00000003,0,00000000,00000000</ITEM>
      <ITEM name="Item 3">"temp4","030C",00000001,0000000E,780,2,3,00000003,0,00000000,00000000</ITEM>
+     <ITEM name="Item 4">"pow1","0303",00000001,0000000E,771,1,4,00000002,0,00000000,00000000</ITEM>
+     <ITEM name="Item 5">"mode_temp","0314",00000001,0000000E,788,2,3,00000003,0,00000000,00000000</ITEM>
      <ITEM name="Name Column Width">83</ITEM>
      <ITEM name="ShowAddresses">Yes</ITEM>
      <ITEM name="ShowPreviousValues">No</ITEM>
@@ -33,10 +35,10 @@
      <ITEM name="Value Column Width">83</ITEM>
      <ITEM name="Version">100</ITEM>
      <ITEM name="Watch Expression Column Width">83</ITEM>
-     <ITEM name="nItems">4</ITEM>
+     <ITEM name="nItems">6</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="695" x="453" flags="00000001" y="408" h="448" pid="0" iid="31">
+   <POPUP w="695" x="467" flags="00008001" y="487" h="448" pid="0" iid="31">
     <PROPERTIES/>
    </POPUP>
    <POPUP w="30" x="98" flags="00000008" y="188" h="16" pid="3" iid="1">
@@ -72,7 +74,7 @@
      <ITEM name="TopLineAddress">00000000</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="16" x="178" flags="80000000" y="268" h="32" pid="14" iid="1">
+   <POPUP w="16" x="178" flags="00000000" y="268" h="32" pid="14" iid="1">
     <PROPERTIES>
      <ITEM name="DataType">2</ITEM>
      <ITEM name="DispChars">Yes</ITEM>
@@ -102,9 +104,9 @@
      <ITEM name="TopLineAddress">00000020</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="600" x="404" flags="0000002b" y="515" h="400" pid="1" iid="1">
+   <POPUP w="600" x="680" flags="0000002b" y="545" h="400" pid="1" iid="1">
     <PROPERTIES>
-     <ITEM name="Breakpoint 0">"read_temp",0222,0020,CC03,A860,1
+     <ITEM name="Breakpoint 0">"main",0832,0152,66B5,A860,1
 </ITEM>
      <ITEM name="CaseSensitive">No</ITEM>
      <ITEM name="DISPADDRS">Yes</ITEM>
@@ -115,7 +117,7 @@
      <ITEM name="nBreakpoints">0</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="300" x="777" flags="0000000b" y="256" h="300" pid="2" iid="1">
+   <POPUP w="300" x="856" flags="0000000b" y="208" h="300" pid="2" iid="1">
     <PROPERTIES>
      <ITEM name="Address Column Width">94</ITEM>
      <ITEM name="AutoResize">No</ITEM>
@@ -212,7 +214,7 @@
      <ITEM name="TopLineAddress">00000000</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="450" x="93" flags="00008023" y="339" h="466" pid="0" iid="4">
+   <POPUP w="450" x="73" flags="00000023" y="344" h="466" pid="0" iid="4">
     <PROPERTIES>
      <ITEM name="AutoEcho">0</ITEM>
      <ITEM name="HexMode">0</ITEM>

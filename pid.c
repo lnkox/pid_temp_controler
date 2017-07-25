@@ -40,7 +40,7 @@
 #define tempmode2  352 // Температура 2-го режиму (одиниця на 0.0625 градуса)
 #define tempmode3  384 // Температура 3-го режиму (одиниця на 0.0625 градуса)
 
-#include <mega328.h>
+#include <mega8.h>
 // Standard Input/Output functions
 #include <stdio.h>
 #include <delay.h>
@@ -55,6 +55,7 @@ volatile int temp1,temp2,temp3,temp4;
 volatile unsigned char res1=0,res2=0,res3=0,res4=0;
 volatile int error_cnt=0;
 volatile int mode_temp=0;
+
 struct PID_DATA pidData1;
 bit pid_frag=0;
 
@@ -74,8 +75,8 @@ int w1_find(void) // Перевірка наявності та скидання пристрою на 1-wire для всіх
     device=device+!t2_port;
     device=device+!t3_port;
     device=device+!t4_port;
-	delay_us(420);
-	return device;
+    delay_us(420);
+    return device;
 }
 
 void w1_send(char cmd) // відправка  байту 1-wire для всіх 4 термодатчиків
@@ -145,6 +146,7 @@ void ds1820_init(void) // ініціалізація всіх 4 термодатчиків
 }
 void read_temp(void) // Читання температури всіх 4 термодатчиків
 {
+    int tt1,tt2,tt3,tt4;
     unsigned char data[4];
     w1_find();
     w1_send(0xcc);
@@ -156,10 +158,14 @@ void read_temp(void) // Читання температури всіх 4 термодатчиків
     temp2 = (res2<<8)| data[1];
     temp3 = (res3<<8)| data[2];
     temp4 = (res4<<8)| data[3];
-   // printf("temp1=%i  ",temp1);  
-   // printf("temp2=%i  ",temp2); 
-   // printf("temp3=%i  ",temp3); 
-   // printf("temp4=%i \n\r",temp4); 
+//    tt1=temp1*0.0625; 
+//    tt2=temp2*0.0625;
+//    tt3=temp3*0.0625;
+//    tt4=temp4*0.0625;
+//    printf("temp1=%i  ",tt1);  
+//    printf("temp2=%i  ",tt2); 
+//    printf("temp3=%i  ",tt3); 
+//    printf("temp4=%i \n\r",tt4); 
     
 
 }
@@ -170,16 +176,14 @@ void check_mode(void) // Перевірка стану перемикача режимів (Виставлення необхід
     if (mode_2==0) mode_temp=tempmode2;
     if (mode_3==0) mode_temp=tempmode3; 
 }
-interrupt [PC_INT0] void pin_change_isr0(void) // Переривання при зміні стану будь якого з трьох датчиків нуля (оновлення відповідного лічильника інтервалу)
-{
-    if (zero_1==1) delay_pow1=0; 
-    if (zero_2==1) delay_pow2=0; 
-    if (zero_3==1) delay_pow3=0; 
-}
+
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void) // Переривання таймера кожні 0.1мс (задавання інтервалів вмикання семістора для регулювання потужності)
 {
     bit p1=0,p2=0,p3=0;
+    if (zero_1==1) delay_pow1=0; 
+    if (zero_2==1) delay_pow2=0; 
+    if (zero_3==1) delay_pow3=0;
     TCNT0=0x9C;
     if ( delay_pow1<105 ) delay_pow1++;
     if ( delay_pow2<105 ) delay_pow2++;
@@ -221,19 +225,24 @@ void set_power_ten3(int power) // Встановлення вихідної потужності для тена 3
     if (power>99) power=99;
     if (power>5) { pow3=100-power;} else {pow3=110;}
 }
+
+
+
+// Timer2 overflow interrupt service routine
+interrupt [TIM2_OVF] void timer2_ovf_isr(void)
+{
+// Reinitialize Timer2 value
+TCNT2=0x06;
+// Place your code here
+
+
+}
+
 void main(void)
 {
 // Declare your local variables here
 int power_to_ten1, power_to_ten2, power_to_ten3;
-
-// Crystal Oscillator division factor: 1
-#pragma optsize-
-CLKPR=(1<<CLKPCE);
-CLKPR=(0<<CLKPCE) | (0<<CLKPS3) | (0<<CLKPS2) | (0<<CLKPS1) | (0<<CLKPS0);
-#ifdef _OPTIMIZE_SIZE_
-#pragma optsize+
-#endif
-
+int tt1=0;
 // Input/Output Ports initialization
 // Port B initialization
 // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In 
@@ -256,15 +265,8 @@ PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<
 // Timer/Counter 0 initialization
 // Clock source: System Clock
 // Clock value: 1000,000 kHz
-// Mode: Normal top=0xFF
-// OC0A output: Disconnected
-// OC0B output: Disconnected
-// Timer Period: 0,1 ms
-TCCR0A=(0<<COM0A1) | (0<<COM0A0) | (0<<COM0B1) | (0<<COM0B0) | (0<<WGM01) | (0<<WGM00);
-TCCR0B=(0<<WGM02) | (0<<CS02) | (1<<CS01) | (0<<CS00);
-TCNT0=0x9C;
-OCR0A=0x00;
-OCR0B=0x00;
+TCCR0=(0<<CS02) | (1<<CS01) | (0<<CS00);
+TCNT0=0x00;
 
 // Timer/Counter 1 initialization
 // Clock source: System Clock
@@ -274,15 +276,15 @@ OCR0B=0x00;
 // OC1B output: Disconnected
 // Noise Canceler: Off
 // Input Capture on Falling Edge
-// Timer Period: 0,5 s
+// Timer Period: 0,52429 s
 // Timer1 Overflow Interrupt: On
 // Input Capture Interrupt: Off
 // Compare A Match Interrupt: Off
 // Compare B Match Interrupt: Off
 TCCR1A=(0<<COM1A1) | (0<<COM1A0) | (0<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (0<<WGM10);
 TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (1<<CS11) | (1<<CS10);
-TCNT1H=0x0B;
-TCNT1L=0xDC;
+TCNT1H=0x00;
+TCNT1L=0x00;
 ICR1H=0x00;
 ICR1L=0x00;
 OCR1AH=0x00;
@@ -292,49 +294,34 @@ OCR1BL=0x00;
 
 // Timer/Counter 2 initialization
 // Clock source: System Clock
-// Clock value: Timer2 Stopped
+// Clock value: 250,000 kHz
 // Mode: Normal top=0xFF
-// OC2A output: Disconnected
-// OC2B output: Disconnected
-ASSR=(0<<EXCLK) | (0<<AS2);
-TCCR2A=(0<<COM2A1) | (0<<COM2A0) | (0<<COM2B1) | (0<<COM2B0) | (0<<WGM21) | (0<<WGM20);
-TCCR2B=(0<<WGM22) | (0<<CS22) | (0<<CS21) | (0<<CS20);
-TCNT2=0x00;
-OCR2A=0x00;
-OCR2B=0x00;
+// OC2 output: Disconnected
+// Timer Period: 1 ms
+ASSR=0<<AS2;
+TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (1<<CS21) | (1<<CS20);
+TCNT2=0x06;
+OCR2=0x00;
 
-// Timer/Counter 0 Interrupt(s) initialization
-TIMSK0=(0<<OCIE0B) | (0<<OCIE0A) | (1<<TOIE0);
-
-// Timer/Counter 1 Interrupt(s) initialization
-TIMSK1=(0<<ICIE1) | (0<<OCIE1B) | (0<<OCIE1A) | (1<<TOIE1);
-
-// Timer/Counter 2 Interrupt(s) initialization
-TIMSK2=(0<<OCIE2B) | (0<<OCIE2A) | (0<<TOIE2);
+// Timer(s)/Counter(s) Interrupt(s) initialization
+TIMSK=(0<<OCIE2) | (1<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (1<<TOIE1) | (1<<TOIE0);
 
 // External Interrupt(s) initialization
 // INT0: Off
 // INT1: Off
-// Interrupt on any change on pins PCINT0-7: On
-// Interrupt on any change on pins PCINT8-14: Off
-// Interrupt on any change on pins PCINT16-23: Off
-EICRA=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
-EIMSK=(0<<INT1) | (0<<INT0);
-PCICR=(0<<PCIE2) | (0<<PCIE1) | (1<<PCIE0);
-PCMSK0=(0<<PCINT7) | (0<<PCINT6) | (1<<PCINT5) | (1<<PCINT4) | (1<<PCINT3) | (0<<PCINT2) | (0<<PCINT1) | (0<<PCINT0);
-PCIFR=(0<<PCIF2) | (0<<PCIF1) | (1<<PCIF0);
+MCUCR=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
 
 // USART initialization
 // Communication Parameters: 8 Data, 1 Stop, No Parity
 // USART Receiver: Off
 // USART Transmitter: On
-// USART0 Mode: Asynchronous
+// USART Mode: Asynchronous
 // USART Baud Rate: 9600
-UCSR0A=(0<<RXC0) | (0<<TXC0) | (0<<UDRE0) | (0<<FE0) | (0<<DOR0) | (0<<UPE0) | (0<<U2X0) | (0<<MPCM0);
-UCSR0B=(0<<RXCIE0) | (0<<TXCIE0) | (0<<UDRIE0) | (0<<RXEN0) | (1<<TXEN0) | (0<<UCSZ02) | (0<<RXB80) | (0<<TXB80);
-UCSR0C=(0<<UMSEL01) | (0<<UMSEL00) | (0<<UPM01) | (0<<UPM00) | (0<<USBS0) | (1<<UCSZ01) | (1<<UCSZ00) | (0<<UCPOL0);
-UBRR0H=0x00;
-UBRR0L=0x33;
+UCSRA=(0<<RXC) | (0<<TXC) | (0<<UDRE) | (0<<FE) | (0<<DOR) | (0<<UPE) | (0<<U2X) | (0<<MPCM);
+UCSRB=(0<<RXCIE) | (0<<TXCIE) | (0<<UDRIE) | (0<<RXEN) | (1<<TXEN) | (0<<UCSZ2) | (0<<RXB8) | (0<<TXB8);
+UCSRC=(1<<URSEL) | (0<<UMSEL) | (0<<UPM1) | (0<<UPM0) | (0<<USBS) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCPOL);
+UBRRH=0x00;
+UBRRL=0x33;
 
 // Analog Comparator initialization
 // Analog Comparator: Off
@@ -343,14 +330,11 @@ UBRR0L=0x33;
 // The Analog Comparator's negative input is
 // connected to the AIN1 pin
 ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
-ADCSRB=(0<<ACME);
-// Digital input buffer on AIN0: On
-// Digital input buffer on AIN1: On
-DIDR1=(0<<AIN0D) | (0<<AIN1D);
+SFIOR=(0<<ACME);
 
 // ADC initialization
 // ADC disabled
-ADCSRA=(0<<ADEN) | (0<<ADSC) | (0<<ADATE) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (0<<ADPS1) | (0<<ADPS0);
+ADCSRA=(0<<ADEN) | (0<<ADSC) | (0<<ADFR) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (0<<ADPS1) | (0<<ADPS0);
 
 // SPI initialization
 // SPI disabled
@@ -359,12 +343,6 @@ SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<
 // TWI initialization
 // TWI disabled
 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
-
-// 1 Wire Bus initialization
-// 1 Wire Data port: PORTD
-// 1 Wire Data bit: 5
-// Note: 1 Wire port settings are specified in the
-// Project|Configure|C Compiler|Libraries|1 Wire menu.
 
 ds1820_init();
 // Global enable interrupts
@@ -404,10 +382,13 @@ while (1)
         if(temp2>1200 || temp2==-1) error_cnt++;  
         if(temp3>1200 || temp3==-1) error_cnt++;  
         if(temp4>1200 || temp4==-1) error_cnt++; 
-        printf("err=%i  ", error_cnt);   
-        printf("mV=%i  ",temp1); 
-        printf("oV=%i \n\r",power_to_ten1); 
-        pid_frag=0;
+        //printf("err=%i  ", error_cnt);  
+        tt1=temp1*0.0625; 
+        printf("t1=%i  ",tt1); 
+        set_power_ten1(tt1*2);
+        printf("pow1=%i \n\r",pow1); 
+        pid_frag=0;  
+        
     }
         
 }

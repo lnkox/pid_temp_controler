@@ -18,23 +18,15 @@
 #define t2_port PORTD.7  // Термодатчик 2
 #define t2_pin PIND.7 // Термодатчик 2
 #define t2_ddr DDRD.7 // Термодатчик 2
-#define t3_port PORTB.0  // Термодатчик 3
-#define t3_pin PINB.0  // Термодатчик 3
-#define t3_ddr DDRB.0  // Термодатчик 3
-#define t4_port PORTB.1 // Термодатчик 4
-#define t4_pin PINB.1  // Термодатчик 4
-#define t4_ddr DDRB.1  // Термодатчик 4
+#define error_led PORTB.0  // індикатор помилки
+
 
 #define fan PORTB.2 // Вентилятор
 
 
-#define K_P     0.20
-#define K_I     0.00
-#define K_D     0.00
 
-#define maxtemp1  800 // Максимальна температура 1-го тену (одиниця на 0.0625 градуса)
-#define maxtemp2  800 // Максимальна температура 2-го тену (одиниця на 0.0625 градуса)
-#define maxtemp3  800 // Максимальна температура 3-го тену (одиниця на 0.0625 градуса)
+#define maxtemp1  800 // Максимальна температура тену (одиниця на 0.0625 градуса)
+
 
 #define tempmode1  288 // Температура 1-го режиму (одиниця на 0.0625 градуса)
 #define tempmode2  352 // Температура 2-го режиму (одиниця на 0.0625 градуса)
@@ -44,37 +36,32 @@
 // Standard Input/Output functions
 #include <stdio.h>
 #include <delay.h>
-#include "pidlib.h"
 
 // Declare your global variables here
 
 
 volatile char delay_pow1=0,delay_pow2=0,delay_pow3=0;
 volatile char pow1=0,pow2=0,pow3=0;
-volatile int temp1,temp2,temp3,temp4;
-volatile unsigned char res1=0,res2=0,res3=0,res4=0;
+volatile int temp1,temp2;
+volatile unsigned char res1=0,res2=0;
 volatile int error_cnt=0;
 volatile int mode_temp=0;
+volatile int mode_sem=0;
+volatile int power_to_ten=0;
 
-struct PID_DATA pidData1;
 bit pid_frag=0;
 
-void Init_pid(void) // Ініціалізація ПІД
-{
-    pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData1);
-}
+
 int w1_find(void) // Перевірка наявності та скидання пристрою на 1-wire для всіх 4 термодатчиків
 {
     int device=0;
-    t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1; 
-    t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+    t1_ddr=1; t2_ddr=1;
+    t1_port=0; t2_port=0;
     delay_us(485);
-    t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;   
+    t1_ddr=0; t2_ddr=0;    
     delay_us(65);
     device=device+!t1_port;
     device=device+!t2_port;
-    device=device+!t3_port;
-    device=device+!t4_port;
     delay_us(420);
     return device;
 }
@@ -86,20 +73,20 @@ void w1_send(char cmd) // відправка  байту 1-wire для всіх 4 термодатчиків
      {
         if (cmd&0x01) // сравниваем младший бит
         {  
-            t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
-            t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+            t1_ddr=1; t2_ddr=1;
+            t1_port=0; t2_port=0;
             delay_us(15);
-            t1_port=1;t2_port=1;t3_port=1;t4_port=1;
+            t1_port=1;t2_port=1;
             delay_us(50);
-            t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
+            t1_ddr=0;t2_ddr=0;
             delay_us(5);
         }
         else
         { 
-            t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
-            t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+            t1_ddr=1; t2_ddr=1; 
+            t1_port=0; t2_port=0;
             delay_us(65);
-            t1_ddr=0; t2_ddr=0; t3_ddr=0; t4_ddr=0;
+            t1_ddr=0; t2_ddr=0;
             delay_us(5);
         };          
         cmd=cmd>>1;
@@ -111,19 +98,16 @@ char w1_readbyte() // Читання  байту 1-wire для всіх 4 термодатчиків
 {
     unsigned char bitc=0;
     unsigned char res=0; 
-    res1=0;res2=0;res3=0;res4=0;
+    res1=0;res2=0;
     for (bitc=0; bitc < 8; bitc++)
         {
-        t1_ddr=1; t2_ddr=1; t3_ddr=1; t4_ddr=1;
-        t1_port=0; t2_port=0; t3_port=0; t4_port=0;
+        t1_ddr=1; t2_ddr=1;
+        t1_port=0; t2_port=0;
         delay_us(1);
-        t1_ddr=0;t2_ddr=0;t3_ddr=0;t4_ddr=0;
+        t1_ddr=0;t2_ddr=0;
         delay_us(14);
-
         if (t1_pin){res1=res1|(1 << bitc);} 
         if (t2_pin){res2=res2|(1 << bitc);}
-        if (t3_pin){res3=res3|(1 << bitc);}
-        if (t4_pin){res4=res4|(1 << bitc);}
         delay_us(45); 
         };
         delay_us(5);
@@ -146,28 +130,15 @@ void ds1820_init(void) // ініціалізація всіх 4 термодатчиків
 }
 void read_temp(void) // Читання температури всіх 4 термодатчиків
 {
-    int tt1,tt2,tt3,tt4;
-    unsigned char data[4];
+    unsigned char data[2];
     w1_find();
     w1_send(0xcc);
     w1_send(0xbe);    
     w1_readbyte();
-    data[0] = res1; data[1] = res2; data[2] = res3;  data[3] = res4;
+    data[0] = res1; data[1] = res2;
     w1_readbyte();
     temp1 = (res1<<8)| data[0];
     temp2 = (res2<<8)| data[1];
-    temp3 = (res3<<8)| data[2];
-    temp4 = (res4<<8)| data[3];
-//    tt1=temp1*0.0625; 
-//    tt2=temp2*0.0625;
-//    tt3=temp3*0.0625;
-//    tt4=temp4*0.0625;
-//    printf("temp1=%i  ",tt1);  
-//    printf("temp2=%i  ",tt2); 
-//    printf("temp3=%i  ",tt3); 
-//    printf("temp4=%i \n\r",tt4); 
-    
-
 }
 void check_mode(void) // Перевірка стану перемикача режимів (Виставлення необхідної температури в кімнаті)
 {
@@ -181,10 +152,10 @@ void check_mode(void) // Перевірка стану перемикача режимів (Виставлення необхід
 interrupt [TIM0_OVF] void timer0_ovf_isr(void) // Переривання таймера кожні 0.1мс (задавання інтервалів вмикання семістора для регулювання потужності)
 {
     bit p1=0,p2=0,p3=0;
+    TCNT0=0x9C;
     if (zero_1==1) delay_pow1=0; 
     if (zero_2==1) delay_pow2=0; 
     if (zero_3==1) delay_pow3=0;
-    TCNT0=0x9C;
     if ( delay_pow1<105 ) delay_pow1++;
     if ( delay_pow2<105 ) delay_pow2++;
     if ( delay_pow3<105 ) delay_pow3++;
@@ -198,8 +169,8 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void) // Переривання таймера кожні 0.1м
 interrupt [TIM1_OVF] void timer1_ovf_isr(void) // Переривання таймера кожні 100мс (вимір температури, перевірка стану перемикача режимів)
 {
 // Reinitialize Timer1 value
-TCNT1H=0xCF2C >> 8;
-TCNT1L=0xCF2C & 0xff;
+TCNT1H=0;
+TCNT1L=0;
      #asm("cli")
     read_temp();
     send_start_measurement();
@@ -241,12 +212,12 @@ TCNT2=0x06;
 void main(void)
 {
 // Declare your local variables here
-int power_to_ten1, power_to_ten2, power_to_ten3;
-int tt1=0;
+
+int tt1=0,tt2=0;
 // Input/Output Ports initialization
 // Port B initialization
-// Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In 
-DDRB=(0<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (0<<DDB2) | (0<<DDB1) | (0<<DDB0);
+// Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=out 
+DDRB=(0<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (0<<DDB2) | (0<<DDB1) | (1<<DDB0);
 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T 
 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<PORTB2) | (0<<PORTB1) | (0<<PORTB0);
 
@@ -294,17 +265,16 @@ OCR1BL=0x00;
 
 // Timer/Counter 2 initialization
 // Clock source: System Clock
-// Clock value: 250,000 kHz
+// Clock value: Timer2 Stopped
 // Mode: Normal top=0xFF
 // OC2 output: Disconnected
-// Timer Period: 1 ms
 ASSR=0<<AS2;
-TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (1<<CS21) | (1<<CS20);
-TCNT2=0x06;
+TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (0<<CS21) | (0<<CS20);
+TCNT2=0x00;
 OCR2=0x00;
 
 // Timer(s)/Counter(s) Interrupt(s) initialization
-TIMSK=(0<<OCIE2) | (1<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (1<<TOIE1) | (1<<TOIE0);
+TIMSK=(0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (1<<TOIE1) | (1<<TOIE0);
 
 // External Interrupt(s) initialization
 // INT0: Off
@@ -353,40 +323,62 @@ set_power_ten3(0);
 #asm("sei")
 
 
-  Init_pid();
 printf("start \n\r");
 while (1)
 {
       // Place your code here
     if(pid_frag)
     {  
-        if (mode_temp>temp4)
+        if (mode_temp>temp2 && temp2!=-1)
         {
             if(temp1<1200 && temp1!=-1)
             {
-                power_to_ten1 = pid_Controller(maxtemp1,temp1, &pidData1);
+               if (temp1<maxtemp1)
+               {
+                 mode_sem=1; // Режим зростання потужності
+               }
+               else
+               {
+                 mode_sem=2; // Режим спадання потужності 
+               }
             }
             else
             {
-                power_to_ten1=0;   
+                mode_sem=2; // Режим спадання потужності
             } 
         }
         else
         {
-            power_to_ten1=0;power_to_ten2=0;power_to_ten3=0;    
+            mode_sem=2; // Режим спадання потужності   
+        } 
+        
+        if (mode_sem==1 && power_to_ten<100)
+        {
+            power_to_ten++;
         }
-        set_power_ten1(power_to_ten1);
-        set_power_ten2(power_to_ten2);
-        set_power_ten3(power_to_ten3);
+        
+        if (mode_sem==2 && power_to_ten>1)
+        {
+            power_to_ten=power_to_ten-20;
+            if (power_to_ten<0) {power_to_ten=0;}
+        }
+        
+        
+        
+        
+        
+        set_power_ten1(power_to_ten);
+        set_power_ten2(power_to_ten);
+        set_power_ten3(power_to_ten);
         if(temp1>1200 || temp1==-1) error_cnt++;
         if(temp2>1200 || temp2==-1) error_cnt++;  
-        if(temp3>1200 || temp3==-1) error_cnt++;  
-        if(temp4>1200 || temp4==-1) error_cnt++; 
-        //printf("err=%i  ", error_cnt);  
+        if (error_cnt>100) error_led=1;
+        printf("err=%i  ", error_cnt);  
         tt1=temp1*0.0625; 
+        tt2=temp2*0.0625;
         printf("t1=%i  ",tt1); 
-        set_power_ten1(tt1*2);
-        printf("pow1=%i \n\r",pow1); 
+        printf("t2=%i  ",tt2); 
+        printf("power_to_ten=%i \n\r",power_to_ten); 
         pid_frag=0;  
         
     }
